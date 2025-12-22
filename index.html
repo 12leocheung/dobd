@@ -8,23 +8,24 @@
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Orbitron', sans-serif; user-select: none; touch-action: none; cursor: crosshair; }
         #ui { position: absolute; top: 10px; left: 10px; color: #fff; pointer-events: none; z-index: 10; width: calc(100% - 20px); }
         .stat { font-size: clamp(14px, 4vw, 18px); color: #0ff; text-shadow: 0 0 10px #0ff; margin-bottom: 5px; }
-        #hearts-container { display: flex; gap: 8px; margin-top: 10px; }
+        #hearts-container { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
         .heart { width: 22px; height: 22px; background: #f0f; clip-path: path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'); transition: opacity 0.3s; }
         .lost { opacity: 0.1; }
+        #armor-ui { color: #00aaff; font-weight: bold; margin-left: 15px; text-shadow: 0 0 10px #00aaff; }
         
         .mobile-ctrl { display: none; }
         @media (pointer: coarse) { .mobile-ctrl { display: block; } }
 
-        .joystick-container { position: absolute; bottom: 40px; width: 100px; height: 100px; background: rgba(0, 255, 255, 0.1); border: 2px solid rgba(0, 255, 255, 0.3); border-radius: 50%; z-index: 20; touch-action: none; }
+        .joystick-container { position: absolute; bottom: 40px; width: 100px; height: 100px; background: rgba(0, 255, 255, 0.1); border: 2px solid rgba(0, 255, 255, 0.3); border-radius: 50%; z-index: 20; }
         #move-stick { left: 20px; }
         #aim-stick { right: 20px; }
-        .knob { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; background: #0ff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px #0ff; pointer-events: none; }
+        .knob { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; background: #0ff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px #0ff; }
         
         #dash-btn { position: absolute; bottom: 150px; right: 30px; width: 60px; height: 60px; background: rgba(255, 0, 255, 0.3); border: 2px solid #f0f; color: #f0f; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 10px; z-index: 25; font-weight: bold; }
-        #shop-btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; background: #000; border: 2px solid #0ff; color: #0ff; z-index: 30; cursor: pointer; border-radius: 8px; font-family: 'Orbitron'; font-size: 12px; pointer-events: auto; }
+        #shop-btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; background: #000; border: 2px solid #0ff; color: #0ff; z-index: 30; cursor: pointer; border-radius: 8px; font-family: 'Orbitron'; }
         #wheel-overlay { position: absolute; inset: 0; display: none; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 100; }
         #shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 90%; max-width: 400px; }
-        .shop-item { background: #111; border: 2px solid #0ff; color: #0ff; padding: 15px; text-align: center; border-radius: 10px; font-size: 11px; cursor: pointer; pointer-events: auto; }
+        .shop-item { background: #111; border: 2px solid #0ff; color: #0ff; padding: 15px; text-align: center; border-radius: 10px; font-size: 11px; cursor: pointer; }
         
         .enemy-health-wrap { position: absolute; width: 35px; height: 4px; background: #200; border: 1px solid #f0f; pointer-events: none; transform: translate(-50%, -50%); }
         .enemy-health-bar { width: 100%; height: 100%; background: #f0f; }
@@ -35,7 +36,10 @@
     <div id="ui">
         <div class="stat" id="cash-ui">CASH: $500</div>
         <div class="stat" id="weapon-ui" style="color: #f0f;">WEAPON: PISTOL</div>
-        <div id="hearts-container"><div class="heart" id="h1"></div><div class="heart" id="h2"></div><div class="heart" id="h3"></div></div>
+        <div id="hearts-container">
+            <div class="heart" id="h1"></div><div class="heart" id="h2"></div><div class="heart" id="h3"></div>
+            <div id="armor-ui">ARMOR: 0</div>
+        </div>
     </div>
 
     <div id="dash-btn" class="mobile-ctrl">DASH</div>
@@ -64,10 +68,10 @@ import * as THREE from 'three';
 
 // --- STATE ---
 let cash = 500, isPaused = false, isFiring = false;
-let lives = 3, invuln = 0, lastFire = 0, pSpeed = 0.18, currentWpn = 'PISTOL';
+let lives = 3, armor = 0, invuln = 0, lastFire = 0, pSpeed = 0.18, currentWpn = 'PISTOL';
 let shakeIntensity = 0;
 let dashCooldown = 0, dashActive = 0;
-const bullets = [], enemies = [], buildings = [], chests = [], keys = {};
+const bullets = [], enemies = [], buildings = [], chests = [], drops = [], keys = {};
 const moveInput = new THREE.Vector2(), aimInput = new THREE.Vector2();
 
 const mouse = new THREE.Vector2();
@@ -87,7 +91,6 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x010103);
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -107,40 +110,53 @@ scene.add(sun);
 
 // --- WORLD GENERATION ---
 function createBuildings() {
-    for(let i=0; i<15; i++) {
+    for(let i=0; i<20; i++) {
         const w = 4 + Math.random() * 6;
         const h = 5 + Math.random() * 15;
         const d = 4 + Math.random() * 6;
         const geom = new THREE.BoxGeometry(w, h, d);
         const mat = new THREE.MeshStandardMaterial({color: 0x111122, emissive: 0x00ffff, emissiveIntensity: 0.1});
         const b = new THREE.Mesh(geom, mat);
-        
-        // Random position, avoiding center
         let rx, rz;
         do {
-            rx = (Math.random() - 0.5) * 80;
-            rz = (Math.random() - 0.5) * 80;
-        } while (Math.abs(rx) < 10 && Math.abs(rz) < 10);
-        
+            rx = (Math.random() - 0.5) * 100;
+            rz = (Math.random() - 0.5) * 100;
+        } while (Math.abs(rx) < 12 && Math.abs(rz) < 12);
         b.position.set(rx, h/2, rz);
         scene.add(b);
-        buildings.push({ mesh: b, box: new THREE.Box3().setFromObject(b), radius: Math.max(w, d)/1.8 });
+        buildings.push({ mesh: b, box: new THREE.Box3().setFromObject(b) });
     }
 }
 
 function spawnChest() {
-    const geom = new THREE.BoxGeometry(1.2, 1.2, 1.2);
-    const mat = new THREE.MeshStandardMaterial({color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 0.5});
+    const geom = new THREE.BoxGeometry(1.5, 1, 1);
+    const mat = new THREE.MeshStandardMaterial({color: 0x884400, emissive: 0xffaa00, emissiveIntensity: 0.2});
     const c = new THREE.Mesh(geom, mat);
-    const rx = (Math.random() - 0.5) * 70;
-    const rz = (Math.random() - 0.5) * 70;
-    c.position.set(rx, 0.6, rz);
+    let rx, rz;
+    do {
+        rx = (Math.random() - 0.5) * 80;
+        rz = (Math.random() - 0.5) * 80;
+    } while (buildings.some(b => b.box.containsPoint(new THREE.Vector3(rx, 0.5, rz))));
+    c.position.set(rx, 0.5, rz);
     scene.add(c);
-    chests.push({ mesh: c, hp: 3 });
+    chests.push({ mesh: c, hp: 5 });
+}
+
+function spawnDrop(pos) {
+    const types = ['HEALTH', 'ARMOR', 'CASH'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const colors = { HEALTH: 0xff0044, ARMOR: 0x00aaff, CASH: 0xffdd00 };
+    
+    const geom = new THREE.IcosahedronGeometry(0.4);
+    const mat = new THREE.MeshStandardMaterial({color: colors[type], emissive: colors[type], emissiveIntensity: 0.8});
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.copy(pos);
+    scene.add(mesh);
+    drops.push({ mesh, type });
 }
 
 createBuildings();
-for(let i=0; i<5; i++) spawnChest();
+for(let i=0; i<6; i++) spawnChest();
 
 // --- LOGIC ---
 function addShake(amt) { shakeIntensity = Math.max(shakeIntensity, amt); }
@@ -162,6 +178,7 @@ window.buyOrUpgrade = (type, cost) => {
 
 function updateUI() {
     document.getElementById('cash-ui').innerText = `CASH: $${cash}`;
+    document.getElementById('armor-ui').innerText = `ARMOR: ${armor}`;
     document.getElementById('weapon-ui').innerText = `WEAPON: ${currentWpn} (LVL ${weapons[currentWpn].level})`;
     for(let i=1; i<=3; i++) document.getElementById(`h${i}`).className = i <= lives ? 'heart' : 'heart lost';
 }
@@ -188,7 +205,6 @@ window.addEventListener('mousemove', (e) => {
 });
 window.addEventListener('mousedown', (e) => { if(e.button === 0) mouseShooting = true; });
 window.addEventListener('mouseup', (e) => { if(e.button === 0) mouseShooting = false; });
-
 window.onkeydown = (e) => { 
     if(e.code === 'KeyQ') toggleShop(); 
     if(e.code === 'Space' && dashCooldown <= 0) { dashActive = 12; dashCooldown = 40; invuln = 20; }
@@ -201,19 +217,18 @@ function animate() {
     requestAnimationFrame(animate);
     if(isPaused) return;
 
-    // Player Movement & Building Collision
+    // Movement (WASD + Arrows)
     let speed = dashActive > 0 ? pSpeed * 2.8 : pSpeed;
     const prevPos = player.position.clone();
     const move = new THREE.Vector3(moveInput.x, 0, moveInput.y);
-    if(keys['KeyW']) move.z -= 1; if(keys['KeyS']) move.z += 1;
-    if(keys['KeyA']) move.x -= 1; if(keys['KeyD']) move.x += 1;
+    if(keys['KeyW'] || keys['ArrowUp']) move.z -= 1; 
+    if(keys['KeyS'] || keys['ArrowDown']) move.z += 1;
+    if(keys['KeyA'] || keys['ArrowLeft']) move.x -= 1; 
+    if(keys['KeyD'] || keys['ArrowRight']) move.x += 1;
     
     if(move.length() > 0.05) {
         player.position.add(move.normalize().multiplyScalar(speed));
-        // Wall Collision
-        buildings.forEach(b => {
-            if(b.box.containsPoint(player.position)) player.position.copy(prevPos);
-        });
+        buildings.forEach(b => { if(b.box.containsPoint(player.position)) player.position.copy(prevPos); });
     }
     
     if(dashActive > 0) dashActive--;
@@ -223,13 +238,11 @@ function animate() {
     raycaster.setFromCamera(mouse, camera);
     const intersect = new THREE.Vector3();
     if (raycaster.ray.intersectPlane(groundPlane, intersect)) {
-        if(aimInput.length() < 0.1) {
-            player.rotation.y = Math.atan2(intersect.x - player.position.x, intersect.z - player.position.z);
-        }
+        if(aimInput.length() < 0.1) player.rotation.y = Math.atan2(intersect.x - player.position.x, intersect.z - player.position.z);
     }
 
-    // Shoot
-    if(mouseShooting || isFiring || keys['ArrowLeft'] || keys['ArrowRight'] || keys['ArrowUp'] || keys['ArrowDown']) {
+    // Shoot (No arrow keys)
+    if(mouseShooting || isFiring) {
         const w = weapons[currentWpn];
         if(Date.now() - lastFire > w.fireRate) {
             const count = currentWpn === 'SHOTGUN' ? 6 : 1;
@@ -260,29 +273,24 @@ function animate() {
     for(let i=bullets.length-1; i>=0; i--) {
         const b = bullets[i]; b.mesh.position.add(b.vel);
         let removed = false;
-
-        // Wall hit
-        buildings.forEach(wall => {
-            if(wall.box.containsPoint(b.mesh.position)) { scene.remove(b.mesh); bullets.splice(i, 1); removed = true; }
-        });
+        buildings.forEach(wall => { if(wall.box.containsPoint(b.mesh.position)) { scene.remove(b.mesh); bullets.splice(i, 1); removed = true; } });
         if(removed) continue;
 
-        // Chest hit
         for(let j=chests.length-1; j>=0; j--) {
             if(b.mesh.position.distanceTo(chests[j].mesh.position) < 1.5) {
                 chests[j].hp -= weapons[currentWpn].dmg;
                 scene.remove(b.mesh); bullets.splice(i, 1);
                 if(chests[j].hp <= 0) {
+                    spawnDrop(chests[j].mesh.position);
                     scene.remove(chests[j].mesh);
                     chests.splice(j, 1);
-                    cash += 500; updateUI(); spawnChest();
+                    setTimeout(spawnChest, 5000);
                 }
                 removed = true; break;
             }
         }
         if(removed) continue;
 
-        // Enemy hit
         for(let j=enemies.length-1; j>=0; j--) {
             const en = enemies[j];
             if(b.mesh.position.distanceTo(en.mesh.position) < en.radius) {
@@ -291,20 +299,41 @@ function animate() {
                 if(en.hp <= 0) {
                     scene.remove(en.mesh); document.body.removeChild(en.ui);
                     enemies.splice(j, 1); cash += en.isBig ? 400 : 100; updateUI();
-                    addShake(0.8);
                 }
                 removed = true; break;
             }
         }
-        if(!removed && b.mesh.position.distanceTo(player.position) > 70) { scene.remove(b.mesh); bullets.splice(i, 1); }
+        if(!removed && b.mesh.position.distanceTo(player.position) > 80) { scene.remove(b.mesh); bullets.splice(i, 1); }
     }
 
-    // Enemies
+    // Drops Pickup
+    for(let i=drops.length-1; i>=0; i--) {
+        drops[i].mesh.rotation.y += 0.05;
+        if(player.position.distanceTo(drops[i].mesh.position) < 1.5) {
+            const d = drops[i];
+            if(d.type === 'HEALTH' && lives < 3) lives++;
+            if(d.type === 'ARMOR') armor += 2;
+            if(d.type === 'CASH') cash += 250;
+            updateUI();
+            scene.remove(d.mesh);
+            drops.splice(i, 1);
+        }
+    }
+
+    // Enemy AI & Building Collision
     enemies.forEach(en => {
         const toP = new THREE.Vector3().subVectors(player.position, en.mesh.position).normalize();
-        en.mesh.position.add(toP.multiplyScalar(en.isBig ? 0.04 : 0.09));
+        const moveVec = toP.multiplyScalar(en.isBig ? 0.04 : 0.09);
+        const nextPos = en.mesh.position.clone().add(moveVec);
+        
+        let blocked = false;
+        buildings.forEach(b => { if(b.box.containsPoint(nextPos)) blocked = true; });
+        if(!blocked) en.mesh.position.copy(nextPos);
+
         if(en.mesh.position.distanceTo(player.position) < en.radius && invuln === 0) {
-            lives--; invuln = 60; addShake(5.0); updateUI();
+            if(armor > 0) { armor--; invuln = 30; } 
+            else { lives--; invuln = 60; }
+            addShake(5.0); updateUI();
             if(lives <= 0) location.reload();
         }
         const sPos = en.mesh.position.clone().add(new THREE.Vector3(0, en.radius, 0)).project(camera);
@@ -316,6 +345,54 @@ function animate() {
     if(invuln > 0) { invuln--; pMesh.visible = (invuln % 4 > 1); } else pMesh.visible = true;
     renderer.render(scene, camera);
 }
+
+// Mobile Setup
+function setupJoystick(id, knobId, isAim = false) {
+    const container = document.getElementById(id);
+    const knob = document.getElementById(knobId);
+    let touchId = null;
+    const handleTouch = (touch) => {
+        const rect = container.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        let dx = touch.clientX - centerX;
+        let dy = touch.clientY - centerY;
+        const dist = Math.min(50, Math.sqrt(dx*dx + dy*dy));
+        const angle = Math.atan2(dy, dx);
+        knob.style.transform = `translate(calc(-50% + ${Math.cos(angle)*dist}px), calc(-50% + ${Math.sin(angle)*dist}px))`;
+        if(isAim) aimInput.set(Math.cos(angle), Math.sin(angle));
+        else moveInput.set(Math.cos(angle) * (dist/50), Math.sin(angle) * (dist/50));
+    };
+    container.addEventListener('touchstart', (e) => {
+        const touch = e.changedTouches[0];
+        touchId = touch.identifier;
+        if(isAim) isFiring = true;
+        handleTouch(touch);
+    });
+    window.addEventListener('touchmove', (e) => {
+        for (let i=0; i<e.changedTouches.length; i++) {
+            if(e.changedTouches[i].identifier === touchId) handleTouch(e.changedTouches[i]);
+        }
+    });
+    const onEnd = (e) => {
+        for (let i=0; i<e.changedTouches.length; i++) {
+            if(e.changedTouches[i].identifier === touchId) {
+                touchId = null;
+                knob.style.transform = `translate(-50%, -50%)`;
+                if(isAim) { aimInput.set(0,0); isFiring = false; }
+                else moveInput.set(0,0);
+            }
+        }
+    };
+    window.addEventListener('touchend', onEnd);
+}
+
+setupJoystick('move-stick', 'move-knob', false);
+setupJoystick('aim-stick', 'aim-knob', true);
+document.getElementById('dash-btn').addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if(dashCooldown <= 0) { dashActive = 12; dashCooldown = 40; invuln = 20; }
+});
 
 setInterval(() => { if(!isPaused && enemies.length < 18) spawnEnemy(); }, 1400);
 window.addEventListener('resize', () => {
