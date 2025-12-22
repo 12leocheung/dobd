@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Strike: Mouse Edition</title>
+    <title>Neon Strike: Urban Impact</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Orbitron', sans-serif; user-select: none; touch-action: none; cursor: crosshair; }
         #ui { position: absolute; top: 10px; left: 10px; color: #fff; pointer-events: none; z-index: 10; width: calc(100% - 20px); }
@@ -12,7 +12,6 @@
         .heart { width: 22px; height: 22px; background: #f0f; clip-path: path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'); transition: opacity 0.3s; }
         .lost { opacity: 0.1; }
         
-        /* Hide mobile controls on desktop */
         .mobile-ctrl { display: none; }
         @media (pointer: coarse) { .mobile-ctrl { display: block; } }
 
@@ -68,10 +67,9 @@ let cash = 500, isPaused = false, isFiring = false;
 let lives = 3, invuln = 0, lastFire = 0, pSpeed = 0.18, currentWpn = 'PISTOL';
 let shakeIntensity = 0;
 let dashCooldown = 0, dashActive = 0;
-const bullets = [], enemies = [], keys = {};
+const bullets = [], enemies = [], buildings = [], chests = [], keys = {};
 const moveInput = new THREE.Vector2(), aimInput = new THREE.Vector2();
 
-// Desktop Aiming State
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -107,7 +105,44 @@ const sun = new THREE.DirectionalLight(0xffffff, 1.2);
 sun.position.set(10, 20, 10);
 scene.add(sun);
 
-// --- FUNCTIONS ---
+// --- WORLD GENERATION ---
+function createBuildings() {
+    for(let i=0; i<15; i++) {
+        const w = 4 + Math.random() * 6;
+        const h = 5 + Math.random() * 15;
+        const d = 4 + Math.random() * 6;
+        const geom = new THREE.BoxGeometry(w, h, d);
+        const mat = new THREE.MeshStandardMaterial({color: 0x111122, emissive: 0x00ffff, emissiveIntensity: 0.1});
+        const b = new THREE.Mesh(geom, mat);
+        
+        // Random position, avoiding center
+        let rx, rz;
+        do {
+            rx = (Math.random() - 0.5) * 80;
+            rz = (Math.random() - 0.5) * 80;
+        } while (Math.abs(rx) < 10 && Math.abs(rz) < 10);
+        
+        b.position.set(rx, h/2, rz);
+        scene.add(b);
+        buildings.push({ mesh: b, box: new THREE.Box3().setFromObject(b), radius: Math.max(w, d)/1.8 });
+    }
+}
+
+function spawnChest() {
+    const geom = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+    const mat = new THREE.MeshStandardMaterial({color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 0.5});
+    const c = new THREE.Mesh(geom, mat);
+    const rx = (Math.random() - 0.5) * 70;
+    const rz = (Math.random() - 0.5) * 70;
+    c.position.set(rx, 0.6, rz);
+    scene.add(c);
+    chests.push({ mesh: c, hp: 3 });
+}
+
+createBuildings();
+for(let i=0; i<5; i++) spawnChest();
+
+// --- LOGIC ---
 function addShake(amt) { shakeIntensity = Math.max(shakeIntensity, amt); }
 
 window.toggleShop = () => {
@@ -146,64 +181,13 @@ function spawnEnemy() {
     enemies.push({ mesh, hp: isBig?20:6, max: isBig?20:6, ui, radius: size * 1.1, isBig });
 }
 
-// --- DESKTOP MOUSE INPUT ---
+// --- INPUTS ---
 window.addEventListener('mousemove', (e) => {
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 });
 window.addEventListener('mousedown', (e) => { if(e.button === 0) mouseShooting = true; });
 window.addEventListener('mouseup', (e) => { if(e.button === 0) mouseShooting = false; });
-
-// --- TOUCH CONTROLS ---
-function setupJoystick(id, knobId, isAim = false) {
-    const container = document.getElementById(id);
-    const knob = document.getElementById(knobId);
-    let touchId = null;
-    const handleTouch = (touch) => {
-        const rect = container.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        let dx = touch.clientX - centerX;
-        let dy = touch.clientY - centerY;
-        const dist = Math.min(50, Math.sqrt(dx*dx + dy*dy));
-        const angle = Math.atan2(dy, dx);
-        knob.style.transform = `translate(calc(-50% + ${Math.cos(angle)*dist}px), calc(-50% + ${Math.sin(angle)*dist}px))`;
-        if(isAim) aimInput.set(Math.cos(angle), Math.sin(angle));
-        else moveInput.set(Math.cos(angle) * (dist/50), Math.sin(angle) * (dist/50));
-    };
-    container.addEventListener('touchstart', (e) => {
-        if (touchId !== null) return;
-        const touch = e.changedTouches[0];
-        touchId = touch.identifier;
-        if(isAim) isFiring = true;
-        handleTouch(touch);
-    }, {passive: false});
-    window.addEventListener('touchmove', (e) => {
-        for (let i=0; i<e.changedTouches.length; i++) {
-            if(e.changedTouches[i].identifier === touchId) { handleTouch(e.changedTouches[i]); break; }
-        }
-    }, {passive: false});
-    const onEnd = (e) => {
-        for (let i=0; i<e.changedTouches.length; i++) {
-            if(e.changedTouches[i].identifier === touchId) {
-                touchId = null;
-                knob.style.transform = `translate(-50%, -50%)`;
-                if(isAim) { aimInput.set(0,0); isFiring = false; }
-                else moveInput.set(0,0);
-                break;
-            }
-        }
-    };
-    window.addEventListener('touchend', onEnd);
-}
-
-setupJoystick('move-stick', 'move-knob', false);
-setupJoystick('aim-stick', 'aim-knob', true);
-
-document.getElementById('dash-btn').addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    if(dashCooldown <= 0) { dashActive = 12; dashCooldown = 40; invuln = 20; }
-});
 
 window.onkeydown = (e) => { 
     if(e.code === 'KeyQ') toggleShop(); 
@@ -217,40 +201,35 @@ function animate() {
     requestAnimationFrame(animate);
     if(isPaused) return;
 
-    // Movement
+    // Player Movement & Building Collision
     let speed = dashActive > 0 ? pSpeed * 2.8 : pSpeed;
+    const prevPos = player.position.clone();
     const move = new THREE.Vector3(moveInput.x, 0, moveInput.y);
     if(keys['KeyW']) move.z -= 1; if(keys['KeyS']) move.z += 1;
     if(keys['KeyA']) move.x -= 1; if(keys['KeyD']) move.x += 1;
-    if(move.length() > 0.05) player.position.add(move.normalize().multiplyScalar(speed));
+    
+    if(move.length() > 0.05) {
+        player.position.add(move.normalize().multiplyScalar(speed));
+        // Wall Collision
+        buildings.forEach(b => {
+            if(b.box.containsPoint(player.position)) player.position.copy(prevPos);
+        });
+    }
     
     if(dashActive > 0) dashActive--;
     if(dashCooldown > 0) dashCooldown--;
 
-    // Desktop Aiming (Mouse)
+    // Mouse Aim
     raycaster.setFromCamera(mouse, camera);
     const intersect = new THREE.Vector3();
     if (raycaster.ray.intersectPlane(groundPlane, intersect)) {
-        // Only use mouse rotation if the mobile joystick isn't being touched
         if(aimInput.length() < 0.1) {
             player.rotation.y = Math.atan2(intersect.x - player.position.x, intersect.z - player.position.z);
         }
     }
 
-    // Shooting Trigger (Mouse or Mobile Stick)
-    let shouldShoot = mouseShooting || isFiring;
-    let shootV = new THREE.Vector2(0,0);
-    if(isFiring) shootV.copy(aimInput);
-    if(keys['ArrowLeft']) shootV.x = -1; if(keys['ArrowRight']) shootV.x = 1;
-    if(keys['ArrowUp']) shootV.y = -1; if(keys['ArrowDown']) shootV.y = 1;
-    
-    // Use Keyboard Arrow rotation if keys are pressed
-    if(shootV.length() > 0.1) {
-        player.rotation.y = Math.atan2(shootV.x, shootV.y);
-        shouldShoot = true;
-    }
-
-    if(shouldShoot) {
+    // Shoot
+    if(mouseShooting || isFiring || keys['ArrowLeft'] || keys['ArrowRight'] || keys['ArrowUp'] || keys['ArrowDown']) {
         const w = weapons[currentWpn];
         if(Date.now() - lastFire > w.fireRate) {
             const count = currentWpn === 'SHOTGUN' ? 6 : 1;
@@ -267,7 +246,7 @@ function animate() {
         }
     }
 
-    // Camera with Shake
+    // Camera
     const basePos = new THREE.Vector3(player.position.x, 28, player.position.z + 18);
     camera.position.lerp(basePos, 0.15);
     if(shakeIntensity > 0.01) {
@@ -277,10 +256,33 @@ function animate() {
     }
     camera.lookAt(player.position.x, 0, player.position.z);
 
-    // Bullet & Enemy Logic (Same as before)
+    // Bullets
     for(let i=bullets.length-1; i>=0; i--) {
         const b = bullets[i]; b.mesh.position.add(b.vel);
-        if(b.mesh.position.distanceTo(player.position) > 70) { scene.remove(b.mesh); bullets.splice(i, 1); continue; }
+        let removed = false;
+
+        // Wall hit
+        buildings.forEach(wall => {
+            if(wall.box.containsPoint(b.mesh.position)) { scene.remove(b.mesh); bullets.splice(i, 1); removed = true; }
+        });
+        if(removed) continue;
+
+        // Chest hit
+        for(let j=chests.length-1; j>=0; j--) {
+            if(b.mesh.position.distanceTo(chests[j].mesh.position) < 1.5) {
+                chests[j].hp -= weapons[currentWpn].dmg;
+                scene.remove(b.mesh); bullets.splice(i, 1);
+                if(chests[j].hp <= 0) {
+                    scene.remove(chests[j].mesh);
+                    chests.splice(j, 1);
+                    cash += 500; updateUI(); spawnChest();
+                }
+                removed = true; break;
+            }
+        }
+        if(removed) continue;
+
+        // Enemy hit
         for(let j=enemies.length-1; j>=0; j--) {
             const en = enemies[j];
             if(b.mesh.position.distanceTo(en.mesh.position) < en.radius) {
@@ -291,11 +293,13 @@ function animate() {
                     enemies.splice(j, 1); cash += en.isBig ? 400 : 100; updateUI();
                     addShake(0.8);
                 }
-                break;
+                removed = true; break;
             }
         }
+        if(!removed && b.mesh.position.distanceTo(player.position) > 70) { scene.remove(b.mesh); bullets.splice(i, 1); }
     }
 
+    // Enemies
     enemies.forEach(en => {
         const toP = new THREE.Vector3().subVectors(player.position, en.mesh.position).normalize();
         en.mesh.position.add(toP.multiplyScalar(en.isBig ? 0.04 : 0.09));
