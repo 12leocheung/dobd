@@ -129,17 +129,17 @@ function createBuildings() {
 }
 
 function spawnChest() {
-    const geom = new THREE.BoxGeometry(1.5, 1, 1);
-    const mat = new THREE.MeshStandardMaterial({color: 0x884400, emissive: 0xffaa00, emissiveIntensity: 0.2});
+    const geom = new THREE.BoxGeometry(1.5, 1, 1.5);
+    const mat = new THREE.MeshStandardMaterial({color: 0x884400, emissive: 0xffaa00, emissiveIntensity: 0.3});
     const c = new THREE.Mesh(geom, mat);
     let rx, rz;
     do {
-        rx = (Math.random() - 0.5) * 80;
-        rz = (Math.random() - 0.5) * 80;
+        rx = (Math.random() - 0.5) * 85;
+        rz = (Math.random() - 0.5) * 85;
     } while (buildings.some(b => b.box.containsPoint(new THREE.Vector3(rx, 0.5, rz))));
     c.position.set(rx, 0.5, rz);
     scene.add(c);
-    chests.push({ mesh: c, hp: 5 });
+    chests.push({ mesh: c });
 }
 
 function spawnDrop(pos) {
@@ -147,16 +147,17 @@ function spawnDrop(pos) {
     const type = types[Math.floor(Math.random() * types.length)];
     const colors = { HEALTH: 0xff0044, ARMOR: 0x00aaff, CASH: 0xffdd00 };
     
-    const geom = new THREE.IcosahedronGeometry(0.4);
-    const mat = new THREE.MeshStandardMaterial({color: colors[type], emissive: colors[type], emissiveIntensity: 0.8});
+    const geom = new THREE.IcosahedronGeometry(0.5);
+    const mat = new THREE.MeshStandardMaterial({color: colors[type], emissive: colors[type], emissiveIntensity: 1.0});
     const mesh = new THREE.Mesh(geom, mat);
     mesh.position.copy(pos);
+    mesh.position.y = 0.5;
     scene.add(mesh);
     drops.push({ mesh, type });
 }
 
 createBuildings();
-for(let i=0; i<6; i++) spawnChest();
+for(let i=0; i<8; i++) spawnChest();
 
 // --- LOGIC ---
 function addShake(amt) { shakeIntensity = Math.max(shakeIntensity, amt); }
@@ -220,17 +221,30 @@ function animate() {
     // Movement (WASD + Arrows)
     let speed = dashActive > 0 ? pSpeed * 2.8 : pSpeed;
     const prevPos = player.position.clone();
-    const move = new THREE.Vector3(moveInput.x, 0, moveInput.y);
+    const move = new THREE.Vector3(0, 0, 0);
     if(keys['KeyW'] || keys['ArrowUp']) move.z -= 1; 
     if(keys['KeyS'] || keys['ArrowDown']) move.z += 1;
     if(keys['KeyA'] || keys['ArrowLeft']) move.x -= 1; 
     if(keys['KeyD'] || keys['ArrowRight']) move.x += 1;
     
+    // Joystick support
+    if(moveInput.length() > 0.1) { move.x = moveInput.x; move.z = moveInput.y; }
+
     if(move.length() > 0.05) {
         player.position.add(move.normalize().multiplyScalar(speed));
         buildings.forEach(b => { if(b.box.containsPoint(player.position)) player.position.copy(prevPos); });
     }
     
+    // Collect Chests (Walking into them)
+    for(let i=chests.length-1; i>=0; i--) {
+        if(player.position.distanceTo(chests[i].mesh.position) < 1.8) {
+            spawnDrop(chests[i].mesh.position);
+            scene.remove(chests[i].mesh);
+            chests.splice(i, 1);
+            setTimeout(spawnChest, 7000);
+        }
+    }
+
     if(dashActive > 0) dashActive--;
     if(dashCooldown > 0) dashCooldown--;
 
@@ -240,8 +254,9 @@ function animate() {
     if (raycaster.ray.intersectPlane(groundPlane, intersect)) {
         if(aimInput.length() < 0.1) player.rotation.y = Math.atan2(intersect.x - player.position.x, intersect.z - player.position.z);
     }
+    if(aimInput.length() > 0.1) player.rotation.y = Math.atan2(aimInput.x, aimInput.y);
 
-    // Shoot (No arrow keys)
+    // Shoot
     if(mouseShooting || isFiring) {
         const w = weapons[currentWpn];
         if(Date.now() - lastFire > w.fireRate) {
@@ -276,21 +291,6 @@ function animate() {
         buildings.forEach(wall => { if(wall.box.containsPoint(b.mesh.position)) { scene.remove(b.mesh); bullets.splice(i, 1); removed = true; } });
         if(removed) continue;
 
-        for(let j=chests.length-1; j>=0; j--) {
-            if(b.mesh.position.distanceTo(chests[j].mesh.position) < 1.5) {
-                chests[j].hp -= weapons[currentWpn].dmg;
-                scene.remove(b.mesh); bullets.splice(i, 1);
-                if(chests[j].hp <= 0) {
-                    spawnDrop(chests[j].mesh.position);
-                    scene.remove(chests[j].mesh);
-                    chests.splice(j, 1);
-                    setTimeout(spawnChest, 5000);
-                }
-                removed = true; break;
-            }
-        }
-        if(removed) continue;
-
         for(let j=enemies.length-1; j>=0; j--) {
             const en = enemies[j];
             if(b.mesh.position.distanceTo(en.mesh.position) < en.radius) {
@@ -309,6 +309,7 @@ function animate() {
     // Drops Pickup
     for(let i=drops.length-1; i>=0; i--) {
         drops[i].mesh.rotation.y += 0.05;
+        drops[i].mesh.position.y = 0.5 + Math.sin(Date.now() * 0.005) * 0.2;
         if(player.position.distanceTo(drops[i].mesh.position) < 1.5) {
             const d = drops[i];
             if(d.type === 'HEALTH' && lives < 3) lives++;
