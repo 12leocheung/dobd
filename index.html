@@ -1,3 +1,4 @@
+finish this code:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,6 +18,12 @@
         #powerup-container { position: fixed; bottom: 220px; left: 20px; z-index: 20; display: flex; flex-direction: column; gap: 8px; }
         .powerup-indicator { color: #fff; font-size: 14px; background: rgba(0, 0, 0, 0.8); padding: 8px 12px; border: 2px solid; border-radius: 6px; }
         
+        #objective { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); padding: 12px 20px; border: 2px solid #ff00ff; border-radius: 8px; color: #ff00ff; font-size: 16px; text-align: center; text-shadow: 0 0 10px #ff00ff; z-index: 15; }
+        #boss-health { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); width: 400px; max-width: 80%; background: rgba(0, 0, 0, 0.9); padding: 10px; border: 3px solid #ff0000; border-radius: 8px; display: none; z-index: 15; }
+        .boss-name { color: #ff0000; font-size: 18px; text-align: center; margin-bottom: 8px; text-shadow: 0 0 15px #ff0000; }
+        .boss-bar-container { width: 100%; height: 20px; background: #300; border: 2px solid #ff0000; border-radius: 4px; overflow: hidden; }
+        .boss-bar { height: 100%; background: linear-gradient(90deg, #ff0000, #ff6600); transition: width 0.3s; }
+        
         .mobile-ctrl { display: none; }
         @media (pointer: coarse) { .mobile-ctrl { display: block; } }
 
@@ -27,22 +34,70 @@
         
         #dash-btn { position: absolute; bottom: 150px; right: 30px; width: 60px; height: 60px; background: rgba(255, 0, 255, 0.3); border: 2px solid #f0f; color: #f0f; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 10px; z-index: 25; font-weight: bold; }
         #shop-btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; background: #000; border: 2px solid #0ff; color: #0ff; z-index: 30; cursor: pointer; border-radius: 8px; font-family: 'Orbitron'; }
-        #wheel-overlay { position: absolute; inset: 0; display: none; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 100; }
-        #shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 90%; max-width: 400px; }
-        .shop-item { background: #111; border: 2px solid #0ff; color: #0ff; padding: 15px; text-align: center; border-radius: 10px; font-size: 11px; cursor: pointer; }
+        #wheel-overlay { position: absolute; inset: 0; display: none; background: rgba(0,0,0,0.95); justify-content: center; align-items: center; z-index: 100; flex-direction: column; }
+        #shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 90%; max-width: 600px; }
+        .shop-item { background: #111; border: 2px solid #0ff; color: #0ff; padding: 15px; text-align: center; border-radius: 10px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
+        .shop-item:hover { background: #1a1a2e; border-color: #00ffff; transform: scale(1.05); }
         
         .enemy-health-wrap { position: absolute; width: 35px; height: 4px; background: #200; border: 1px solid #f0f; pointer-events: none; transform: translate(-50%, -50%); }
         .enemy-health-bar { width: 100%; height: 100%; background: #f0f; transition: width 0.1s; }
+        
+        #story-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.95); display: flex; justify-content: center; align-items: center; z-index: 200; }
+        .story-box { max-width: 600px; padding: 40px; background: #0a0a0a; border: 3px solid #0ff; border-radius: 12px; text-align: center; }
+        .story-title { font-size: 32px; color: #0ff; margin-bottom: 20px; text-shadow: 0 0 20px #0ff; }
+        .story-text { font-size: 16px; color: #fff; line-height: 1.8; margin-bottom: 30px; }
+        .story-btn { padding: 15px 40px; background: #0ff; color: #000; border: none; border-radius: 8px; font-family: 'Orbitron'; font-size: 18px; cursor: pointer; font-weight: bold; }
+        .story-btn:hover { background: #00ffff; box-shadow: 0 0 20px #0ff; }
+        
+        #victory-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.95); display: none; justify-content: center; align-items: center; z-index: 200; }
+        .victory-box { max-width: 600px; padding: 40px; background: #0a0a0a; border: 3px solid #00ff00; border-radius: 12px; text-align: center; }
+        .victory-title { font-size: 48px; color: #00ff00; margin-bottom: 20px; text-shadow: 0 0 30px #00ff00; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div id="story-overlay">
+        <div class="story-box">
+            <div class="story-title">NEON STRIKE: URBAN IMPACT</div>
+            <div class="story-text">
+                The year is 2087. The megacity has fallen under the control of NEXUS-7, a rogue AI that has spawned an army of hostile cyber-drones. 
+                <br><br>
+                You are the last operative with clearance to the central tower. Your mission: eliminate 50 drones, breach the tower's inner sanctum, and destroy NEXUS-7 before it launches a global takeover.
+                <br><br>
+                The city's fate rests in your hands, soldier.
+            </div>
+            <button class="story-btn" onclick="startGame()">BEGIN MISSION</button>
+        </div>
+    </div>
+
+    <div id="victory-overlay">
+        <div class="victory-box">
+            <div class="victory-title">MISSION COMPLETE</div>
+            <div class="story-text">
+                NEXUS-7 has been neutralized. The cyber-drone threat is eliminated. The city is safe... for now.
+                <br><br>
+                But in the shadows of the neon towers, new threats are already emerging...
+            </div>
+            <button class="story-btn" onclick="location.reload()">RETURN TO BASE</button>
+        </div>
+    </div>
+
     <div id="ui">
         <div class="stat" id="cash-ui">CASH: $500</div>
         <div class="stat" id="weapon-ui" style="color: #f0f;">WEAPON: PISTOL</div>
         <div id="hearts-container">
             <div class="heart" id="h1"></div><div class="heart" id="h2"></div><div class="heart" id="h3"></div>
             <div id="armor-ui">ARMOR: 0</div>
+        </div>
+    </div>
+
+    <div id="objective">ELIMINATE DRONES: 0/50</div>
+    
+    <div id="boss-health">
+        <div class="boss-name">⚠ NEXUS-7 ⚠</div>
+        <div class="boss-bar-container">
+            <div class="boss-bar" id="boss-bar" style="width: 100%"></div>
         </div>
     </div>
 
@@ -53,6 +108,7 @@
     <button id="shop-btn" onclick="toggleShop()">SHOP (Q)</button>
 
     <div id="wheel-overlay" onclick="toggleShop()">
+        <div style="color: #0ff; font-size: 24px; margin-bottom: 20px;">ARMORY</div>
         <div id="shop-grid" onclick="event.stopPropagation()">
             <div class="shop-item" onclick="buyOrUpgrade('PISTOL', 0)">PISTOL LVL+ ($200)</div>
             <div class="shop-item" onclick="buyOrUpgrade('SHOTGUN', 500)">SHOTGUN ($500)</div>
@@ -60,8 +116,10 @@
             <div class="shop-item" onclick="buyOrUpgrade('RAILGUN', 2500)">RAILGUN ($2500)</div>
             <div class="shop-item" onclick="buyOrUpgrade('FLAMETHROWER', 1800)">FLAMETHROWER ($1800)</div>
             <div class="shop-item" onclick="buyOrUpgrade('LASER', 3500)">LASER ($3500)</div>
-            <div class="shop-item" onclick="buyOrUpgrade('SPEED', 300)">BOOTS ($300)</div>
-            <div class="shop-item" onclick="toggleShop()" style="background: #222; border-color: #fff;">BACK</div>
+            <div class="shop-item" onclick="buyOrUpgrade('PLASMA', 4500)">PLASMA CANNON ($4500)</div>
+            <div class="shop-item" onclick="buyOrUpgrade('MINIGUN', 3800)">MINIGUN ($3800)</div>
+            <div class="shop-item" onclick="buyOrUpgrade('SPEED', 300)">SPEED BOOTS ($300)</div>
+            <div class="shop-item" onclick="toggleShop()" style="background: #222; border-color: #fff; grid-column: span 3;">CLOSE</div>
         </div>
     </div>
 
@@ -79,15 +137,17 @@ import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/
 import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 // --- STATE ---
-let cash = 500, isPaused = false, isFiring = false;
+let cash = 500, isPaused = true, isFiring = false;
 let lives = 3, armor = 0, invuln = 0, lastFire = 0, pSpeed = 0.18, currentWpn = 'PISTOL';
 let shakeIntensity = 0;
 let dashCooldown = 0, dashActive = 0;
+let killCount = 0, bossSpawned = false, gameStarted = false;
 const bullets = [], enemies = [], buildings = [], chests = [], drops = [], keys = {};
 const moveInput = new THREE.Vector2(), aimInput = new THREE.Vector2();
 const activePowerups = {};
 const muzzleFlashes = [];
 const particles = [];
+let boss = null;
 
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
@@ -100,7 +160,9 @@ const weapons = {
     SMG: { level: 0, owned: false, fireRate: 100, dmg: 0.5, color: 0x00ffff, shake: 0.2, spread: 0.2 },
     RAILGUN: { level: 0, owned: false, fireRate: 1500, dmg: 25, color: 0xffffff, shake: 4.5, spread: 0 },
     FLAMETHROWER: { level: 0, owned: false, fireRate: 50, dmg: 0.3, color: 0xff4400, shake: 0.1, spread: 0.3 },
-    LASER: { level: 0, owned: false, fireRate: 80, dmg: 2.0, color: 0x00ff00, shake: 0.3, spread: 0 }
+    LASER: { level: 0, owned: false, fireRate: 80, dmg: 2.0, color: 0x00ff00, shake: 0.3, spread: 0 },
+    PLASMA: { level: 0, owned: false, fireRate: 400, dmg: 8, color: 0x00ffff, shake: 2.0, spread: 0.1 },
+    MINIGUN: { level: 0, owned: false, fireRate: 60, dmg: 0.8, color: 0xffaa00, shake: 0.3, spread: 0.15 }
 };
 
 // --- THREE SETUP ---
@@ -119,7 +181,7 @@ const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    1.2, 0.5, 0.3
+    1.5, 0.6, 0.4
 );
 composer.addPass(bloomPass);
 
@@ -132,6 +194,9 @@ ctx.fillStyle = '#00ffff';
 ctx.beginPath();
 ctx.arc(32, 20, 12, 0, Math.PI * 2);
 ctx.fill();
+ctx.fillStyle = '#006666';
+ctx.fillRect(26, 18, 4, 4);
+ctx.fillRect(34, 18, 4, 4);
 ctx.fillRect(24, 32, 16, 24);
 ctx.fillRect(20, 40, 8, 16);
 ctx.fillRect(36, 40, 8, 16);
@@ -153,8 +218,8 @@ scene.add(sun);
 
 // Point lights for atmosphere
 const lights = [];
-for(let i=0; i<5; i++) {
-    const light = new THREE.PointLight(i % 2 ? 0xff00ff : 0x00ffff, 2, 30);
+for(let i=0; i<8; i++) {
+    const light = new THREE.PointLight(i % 2 ? 0xff00ff : 0x00ffff, 3, 35);
     light.position.set((Math.random()-0.5)*80, 5, (Math.random()-0.5)*80);
     scene.add(light);
     lights.push(light);
@@ -165,18 +230,84 @@ function createEnemySprite(isBig) {
     const c = document.createElement('canvas');
     c.width = 64; c.height = 64;
     const ctx = c.getContext('2d');
+    
+    // Menacing robotic design
     ctx.fillStyle = isBig ? '#ff0000' : '#ff00ff';
-    ctx.beginPath();
-    ctx.arc(32, 32, isBig ? 28 : 20, 0, Math.PI * 2);
-    ctx.fill();
+    
+    // Body
+    ctx.fillRect(16, 24, 32, 32);
+    
+    // Head
+    ctx.fillRect(20, 10, 24, 20);
+    
+    // Glowing red eyes
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(22, 16, 8, 6);
+    ctx.fillRect(34, 16, 8, 6);
+    
+    // Menacing mouth/vent
     ctx.fillStyle = '#000';
-    ctx.fillRect(20, 24, 8, 8);
-    ctx.fillRect(36, 24, 8, 8);
-    ctx.fillRect(24, 40, 16, 4);
+    ctx.fillRect(24, 24, 16, 4);
+    
+    // Spikes/weapons
+    ctx.fillStyle = isBig ? '#aa0000' : '#aa00aa';
+    ctx.beginPath();
+    ctx.moveTo(14, 30);
+    ctx.lineTo(8, 35);
+    ctx.lineTo(14, 40);
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.moveTo(50, 30);
+    ctx.lineTo(56, 35);
+    ctx.lineTo(50, 40);
+    ctx.fill();
+    
     const tex = new THREE.CanvasTexture(c);
     const mat = new THREE.SpriteMaterial({ map: tex });
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(isBig ? 3 : 2, isBig ? 3 : 2, 1);
+    sprite.scale.set(isBig ? 3.5 : 2.2, isBig ? 3.5 : 2.2, 1);
+    return sprite;
+}
+
+function createBossSprite() {
+    const c = document.createElement('canvas');
+    c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+    
+    // Massive robotic boss
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(20, 40, 88, 70);
+    
+    // Head
+    ctx.fillRect(35, 15, 58, 35);
+    
+    // Glowing core
+    ctx.fillStyle = '#ffff00';
+    ctx.beginPath();
+    ctx.arc(64, 75, 15, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Eyes
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(42, 25, 15, 10);
+    ctx.fillRect(71, 25, 15, 10);
+    
+    // Armor plating
+    ctx.strokeStyle = '#aa0000';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(25, 45, 78, 60);
+    ctx.strokeRect(30, 50, 68, 50);
+    
+    // Weapons
+    ctx.fillStyle = '#880000';
+    ctx.fillRect(10, 60, 15, 30);
+    ctx.fillRect(103, 60, 15, 30);
+    
+    const tex = new THREE.CanvasTexture(c);
+    const mat = new THREE.SpriteMaterial({ map: tex });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(8, 8, 1);
     return sprite;
 }
 
@@ -281,6 +412,26 @@ function spawnDrop(pos) {
 createBuildings();
 for(let i=0; i<8; i++) spawnChest();
 
+// --- BOSS ---
+function spawnBoss() {
+    const sprite = createBossSprite();
+    sprite.position.set(0, 4, 0);
+    scene.add(sprite);
+    
+    boss = {
+        mesh: sprite,
+        hp: 500,
+        maxHp: 500,
+        phase: 1,
+        lastAttack: 0,
+        movePattern: 0,
+        angle: 0
+    };
+    
+    document.getElementById('boss-health').style.display = 'block';
+    document.getElementById('objective').innerHTML = '⚠ DESTROY NEXUS-7 ⚠';
+}
+
 // --- POWERUP SYSTEM ---
 function activatePowerup(type) {
     const duration = 10000;
@@ -315,7 +466,14 @@ function activatePowerup(type) {
 // --- LOGIC ---
 function addShake(amt) { shakeIntensity = Math.max(shakeIntensity, amt); }
 
+window.startGame = () => {
+    document.getElementById('story-overlay').style.display = 'none';
+    isPaused = false;
+    gameStarted = true;
+};
+
 window.toggleShop = () => {
+    if(!gameStarted) return;
     isPaused = !isPaused;
     document.getElementById('wheel-overlay').style.display = isPaused ? 'flex' : 'none';
 };
@@ -334,372 +492,164 @@ function updateUI() {
     document.getElementById('cash-ui').innerText = `CASH: $${cash}`;
     document.getElementById('armor-ui').innerText = `ARMOR: ${armor}`;
     document.getElementById('weapon-ui').innerText = `WEAPON: ${currentWpn} (LVL ${weapons[currentWpn].level})`;
-    for(let i=1; i<=3; i++) document.getElementById(`h${i}`).className = i <= lives ? 'heart' : 'heart lost';
+    document.getElementById('objective').innerText =
+        bossSpawned
+            ? '⚠ DESTROY NEXUS-7 ⚠'
+            : `ELIMINATE DRONES: ${killCount}/50`;
+
+    for (let i = 1; i <= 3; i++) {
+        document.getElementById(`h${i}`).classList.toggle('lost', i > lives);
+    }
 }
 
-function spawnEnemy() {
-    const isBig = Math.random() > 0.85;
-    const sprite = createEnemySprite(isBig);
-    const angle = Math.random() * Math.PI * 2;
-    sprite.position.set(player.position.x + Math.cos(angle)*45, isBig ? 1.5 : 1, player.position.z + Math.sin(angle)*45);
-    const ui = document.createElement('div');
-    ui.className = 'enemy-health-wrap';
-    ui.innerHTML = '<div class="enemy-health-bar"></div>';
-    document.body.appendChild(ui);
-    scene.add(sprite);
-    enemies.push({ mesh: sprite, hp: isBig?20:6, max: isBig?20:6, ui, radius: isBig ? 2.5 : 1.2, isBig });
-}
+// --- INPUT ---
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+window.addEventListener('mousedown', () => mouseShooting = true);
+window.addEventListener('mouseup', () => mouseShooting = false);
 
-// --- MINIMAP ---
-function drawMinimap() {
-    const canvas = document.getElementById('minimap');
-    const ctx = canvas.getContext('2d');
-    const scale = 1.5;
-    
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-    ctx.fillRect(0, 0, 150, 150);
-    
-    // Buildings
-    ctx.fillStyle = '#334';
-    buildings.forEach(b => {
-        const x = 75 + (b.mesh.position.x - player.position.x) * scale;
-        const z = 75 + (b.mesh.position.z - player.position.z) * scale;
-        if(x > 0 && x < 150 && z > 0 && z < 150) {
-            ctx.fillRect(x-2, z-2, 4, 4);
-        }
-    });
-    
-    // Enemies
-    ctx.fillStyle = '#f0f';
-    enemies.forEach(e => {
-        const x = 75 + (e.mesh.position.x - player.position.x) * scale;
-        const z = 75 + (e.mesh.position.z - player.position.z) * scale;
-        if(x > 0 && x < 150 && z > 0 && z < 150) {
-            ctx.beginPath();
-            ctx.arc(x, z, 2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    });
-    
-    // Chests
-    ctx.fillStyle = '#fa0';
-    chests.forEach(c => {
-        const x = 75 + (c.mesh.position.x - player.position.x) * scale;
-        const z = 75 + (c.mesh.position.z - player.position.z) * scale;
-        if(x > 0 && x < 150 && z > 0 && z < 150) {
-            ctx.fillRect(x-1.5, z-1.5, 3, 3);
-        }
-    });
-    
-    // Player
-    ctx.fillStyle = '#0ff';
-    ctx.beginPath();
-    ctx.arc(75, 75, 3, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Direction
-    ctx.strokeStyle = '#0ff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(75, 75);
-    ctx.lineTo(75 + Math.sin(player.rotation.y) * 8, 75 + Math.cos(player.rotation.y) * 8);
-    ctx.stroke();
-}
-
-// --- INPUTS ---
-window.addEventListener('mousemove', (e) => {
+window.addEventListener('mousemove', e => {
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 });
-window.addEventListener('mousedown', (e) => { if(e.button === 0) mouseShooting = true; });
-window.addEventListener('mouseup', (e) => { if(e.button === 0) mouseShooting = false; });
-window.onkeydown = (e) => { 
-    if(e.code === 'KeyQ') toggleShop(); 
-    if(e.code === 'Space' && dashCooldown <= 0) { dashActive = 12; dashCooldown = 40; invuln = 20; }
-    keys[e.code] = true; 
-};
-window.onkeyup = (e) => keys[e.code] = false;
 
-// --- LOOP ---
+// --- ENEMIES ---
+function spawnEnemy(isBig = false) {
+    const sprite = createEnemySprite(isBig);
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 40 + Math.random() * 20;
+    sprite.position.set(Math.cos(angle) * dist, 1, Math.sin(angle) * dist);
+    scene.add(sprite);
+
+    enemies.push({
+        mesh: sprite,
+        hp: isBig ? 15 : 4,
+        speed: isBig ? 0.04 : 0.08
+    });
+}
+
+setInterval(() => {
+    if (!isPaused && !bossSpawned) spawnEnemy(Math.random() < 0.2);
+}, 1200);
+
+// --- SHOOTING ---
+function shoot() {
+    const w = weapons[currentWpn];
+    if (Date.now() - lastFire < w.fireRate) return;
+    lastFire = Date.now();
+
+    raycaster.setFromCamera(mouse, camera);
+    const dir = raycaster.ray.direction.clone();
+    dir.x += (Math.random() - 0.5) * w.spread;
+    dir.z += (Math.random() - 0.5) * w.spread;
+
+    bullets.push({
+        pos: player.position.clone(),
+        vel: dir.multiplyScalar(1.5),
+        dmg: w.dmg * (activePowerups.DAMAGE ? 2 : 1),
+        life: 60
+    });
+
+    createMuzzleFlash(player.position.clone());
+    addShake(w.shake);
+}
+
+// --- GAME LOOP ---
 function animate() {
     requestAnimationFrame(animate);
-    if(isPaused) return;
+    if (isPaused) return;
 
     // Movement
-    let speed = dashActive > 0 ? pSpeed * 2.8 : pSpeed;
-    const prevPos = player.position.clone();
-    const move = new THREE.Vector3(0, 0, 0);
-    if(keys['KeyW'] || keys['ArrowUp']) move.z -= 1; 
-    if(keys['KeyS'] || keys['ArrowDown']) move.z += 1;
-    if(keys['KeyA'] || keys['ArrowLeft']) move.x -= 1; 
-    if(keys['KeyD'] || keys['ArrowRight']) move.x += 1;
-    
-    if(moveInput.length() > 0.1) { move.x = moveInput.x; move.z = moveInput.y; }
+    const dir = new THREE.Vector3(
+        (keys['d'] ? 1 : 0) - (keys['a'] ? 1 : 0),
+        0,
+        (keys['s'] ? 1 : 0) - (keys['w'] ? 1 : 0)
+    ).normalize();
 
-    if(move.length() > 0.05) {
-        player.position.add(move.normalize().multiplyScalar(speed));
-        buildings.forEach(b => { if(b.box.containsPoint(player.position)) player.position.copy(prevPos); });
-        pSprite.position.y = Math.sin(Date.now() * 0.01) * 0.1;
-    }
-    
-    // Collect Chests
-    for(let i=chests.length-1; i>=0; i--) {
-        chests[i].mesh.rotation.y += 0.02;
-        if(player.position.distanceTo(chests[i].mesh.position) < 1.8) {
-            spawnDrop(chests[i].mesh.position);
-            for(let j=0; j<5; j++) createParticle(chests[i].mesh.position, 0xffaa00);
-            scene.remove(chests[i].mesh);
-            chests.splice(i, 1);
-            setTimeout(spawnChest, 7000);
-        }
-    }
-
-    if(dashActive > 0) dashActive--;
-    if(dashCooldown > 0) dashCooldown--;
+    player.position.add(dir.multiplyScalar(pSpeed));
 
     // Aim
     raycaster.setFromCamera(mouse, camera);
-    const intersect = new THREE.Vector3();
-    if (raycaster.ray.intersectPlane(groundPlane, intersect)) {
-        if(aimInput.length() < 0.1) player.rotation.y = Math.atan2(intersect.x - player.position.x, intersect.z - player.position.z);
-    }
-    if(aimInput.length() > 0.1) player.rotation.y = Math.atan2(aimInput.x, aimInput.y);
+    const hit = new THREE.Vector3();
+    raycaster.ray.intersectPlane(groundPlane, hit);
+    player.lookAt(hit);
 
-    // Shoot
-    if(mouseShooting || isFiring) {
-        const w = weapons[currentWpn];
-        let fireRate = w.fireRate;
-        if(activePowerups['RAPIDFIRE']) fireRate *= 0.5;
-        
-        if(Date.now() - lastFire > fireRate) {
-            const count = currentWpn === 'SHOTGUN' ? 6 : 1;
-            for(let i=0; i<count; i++) {
-                const size = currentWpn === 'FLAMETHROWER' ? 0.4 : currentWpn === 'LASER' ? 0.15 : 0.25;
-                const b = new THREE.Mesh(
-                    new THREE.SphereGeometry(size), 
-                    new THREE.MeshBasicMaterial({color: w.color})
-                );
-                b.position.copy(player.position).y = 0.5;
-                const spread = (Math.random()-0.5) * w.spread + (currentWpn === 'SHOTGUN' ? (i-2.5)*0.14 : 0);
-                const dir = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).applyAxisAngle(new THREE.Vector3(0,1,0), spread);
-                const speed = currentWpn === 'FLAMETHROWER' ? 0.6 : currentWpn === 'LASER' ? 1.5 : 1.0;
-                bullets.push({ mesh: b, vel: dir.multiplyScalar(speed), life: currentWpn === 'FLAMETHROWER' ? 30 : 100 });
-                scene.add(b);
-            }
-            createMuzzleFlash(player.position.clone().add(new THREE.Vector3(0, 0.5, 0)));
-            lastFire = Date.now();
-            addShake(w.shake);
-        }
-    }
-
-    // Camera
-    const basePos = new THREE.Vector3(player.position.x, 28, player.position.z + 18);
-    camera.position.lerp(basePos, 0.15);
-    if(shakeIntensity > 0.01) {
-        camera.position.x += (Math.random() - 0.5) * shakeIntensity;
-        camera.position.z += (Math.random() - 0.5) * shakeIntensity;
-        shakeIntensity *= 0.7; 
-    }
-    camera.lookAt(player.position.x, 0, player.position.z);
-
-    // Muzzle flashes
-    for(let i=muzzleFlashes.length-1; i>=0; i--) {
-        muzzleFlashes[i].life--;
-        muzzleFlashes[i].sprite.material.opacity = muzzleFlashes[i].life / 3;
-        muzzleFlashes[i].sprite.scale.multiplyScalar(1.2);
-        if(muzzleFlashes[i].life <= 0) {
-            scene.remove(muzzleFlashes[i].sprite);
-            muzzleFlashes.splice(i, 1);
-        }
-    }
-
-    // Particles
-    for(let i=particles.length-1; i>=0; i--) {
-        const p = particles[i];
-        p.sprite.position.add(p.vel);
-        p.vel.y -= 0.01;
-        p.life--;
-        p.sprite.material.opacity = p.life / 20;
-        if(p.life <= 0) {
-            scene.remove(p.sprite);
-            particles.splice(i, 1);
-        }
-    }
+    if (mouseShooting) shoot();
 
     // Bullets
-    for(let i=bullets.length-1; i>=0; i--) {
-        const b = bullets[i]; 
-        b.mesh.position.add(b.vel);
+    bullets.forEach((b, i) => {
+        b.pos.add(b.vel);
         b.life--;
-        
-        if(currentWpn === 'FLAMETHROWER') {
-            b.mesh.material.opacity = b.life / 30;
-            b.mesh.scale.multiplyScalar(1.05);
-        }
-        
-        let removed = false;
-        buildings.forEach(wall => { 
-            if(wall.box.containsPoint(b.mesh.position)) { 
-                createParticle(b.mesh.position, weapons[currentWpn].color);
-                scene.remove(b.mesh); 
-                bullets.splice(i, 1); 
-                removed = true; 
-            } 
-        });
-        if(removed) continue;
-
-        for(let j=enemies.length-1; j>=0; j--) {
-            const en = enemies[j];
-            if(b.mesh.position.distanceTo(en.mesh.position) < en.radius) {
-                let dmg = weapons[currentWpn].dmg;
-                if(activePowerups['DAMAGE']) dmg *= 2.0;
-                en.hp -= dmg;
-                
-                for(let k=0; k<2; k++) createParticle(b.mesh.position, 0xff00ff);
-                scene.remove(b.mesh); bullets.splice(i, 1);
-                
-                if(en.hp <= 0) {
-                    scene.remove(en.mesh); document.body.removeChild(en.ui);
-                    enemies.splice(j, 1); 
-                    cash += en.isBig ? 400 : 100; 
-                    for(let k=0; k<8; k++) createParticle(en.mesh.position, en.isBig ? 0xff0000 : 0xff00ff);
-                    updateUI();
-                }
-                removed = true; break;
+        enemies.forEach(e => {
+            if (e.mesh.position.distanceTo(b.pos) < 1) {
+                e.hp -= b.dmg;
+                b.life = 0;
             }
+        });
+        if (boss && boss.mesh.position.distanceTo(b.pos) < 4) {
+            boss.hp -= b.dmg;
+            document.getElementById('boss-bar').style.width =
+                `${(boss.hp / boss.maxHp) * 100}%`;
+            b.life = 0;
         }
-        if(!removed && (b.mesh.position.distanceTo(player.position) > 80 || b.life <= 0)) { 
-            scene.remove(b.mesh); bullets.splice(i, 1); 
-        }
-    }
+        if (b.life <= 0) bullets.splice(i, 1);
+    });
 
-    // Drops Pickup
-    for(let i=drops.length-1; i>=0; i--) {
-        drops[i].mesh.rotation.y += 0.05;
-        drops[i].mesh.position.y = 0.5 + Math.sin(Date.now() * 0.005) * 0.2;
-        if(player.position.distanceTo(drops[i].mesh.position) < 1.5) {
-            const d = drops[i];
-            if(d.type === 'HEALTH' && lives < 3) lives++;
-            if(d.type === 'ARMOR') armor += 2;
-            if(d.type === 'CASH') cash += 250;
-            if(d.type === 'RAPIDFIRE') activatePowerup('RAPIDFIRE');
-            if(d.type === 'DAMAGE') activatePowerup('DAMAGE');
-            if(d.type === 'SHIELD') { activatePowerup('SHIELD'); invuln = 600; }
+    // Enemies
+    enemies.forEach((e, i) => {
+        const toPlayer = player.position.clone().sub(e.mesh.position).normalize();
+        e.mesh.position.add(toPlayer.multiplyScalar(e.speed));
+
+        if (e.mesh.position.distanceTo(player.position) < 1.2 && invuln <= 0) {
+            if (armor > 0) armor--;
+            else lives--;
+            invuln = 60;
+            addShake(3);
+        }
+
+        if (e.hp <= 0) {
+            scene.remove(e.mesh);
+            enemies.splice(i, 1);
+            killCount++;
+            cash += 25;
+            spawnDrop(e.mesh.position);
             updateUI();
-            for(let j=0; j<5; j++) createParticle(d.mesh.position, d.mesh.material.color.getHex());
-            scene.remove(d.mesh);
-            drops.splice(i, 1);
+        }
+    });
+
+    // Boss
+    if (!bossSpawned && killCount >= 50) {
+        bossSpawned = true;
+        spawnBoss();
+    }
+
+    if (boss) {
+        boss.angle += 0.01;
+        boss.mesh.position.x = Math.cos(boss.angle) * 10;
+        boss.mesh.position.z = Math.sin(boss.angle) * 10;
+
+        if (boss.hp <= 0) {
+            document.getElementById('victory-overlay').style.display = 'flex';
+            isPaused = true;
         }
     }
 
-    // Enemy AI
-    enemies.forEach(en => {
-        const toP = new THREE.Vector3().subVectors(player.position, en.mesh.position).normalize();
-        const moveVec = toP.multiplyScalar(en.isBig ? 0.04 : 0.09);
-        const nextPos = en.mesh.position.clone().add(moveVec);
-        
-        let blocked = false;
-        buildings.forEach(b => { if(b.box.containsPoint(nextPos)) blocked = true; });
-        if(!blocked) en.mesh.position.copy(nextPos);
-        
-        // Breathing animation
-        const breathScale = 1 + Math.sin(Date.now() * 0.003) * 0.05;
-        en.mesh.scale.set(
-            (en.isBig ? 3 : 2) * breathScale, 
-            (en.isBig ? 3 : 2) * breathScale, 
-            1
-        );
+    invuln--;
+    updateUI();
 
-        if(en.mesh.position.distanceTo(player.position) < en.radius && invuln === 0) {
-            if(armor > 0) { armor--; invuln = 30; } 
-            else { lives--; invuln = 60; }
-            addShake(5.0); updateUI();
-            if(lives <= 0) location.reload();
-        }
-        const sPos = en.mesh.position.clone().add(new THREE.Vector3(0, en.radius, 0)).project(camera);
-        en.ui.style.left = (sPos.x + 1) / 2 * window.innerWidth + 'px';
-        en.ui.style.top = -(sPos.y - 1) / 2 * window.innerHeight + 'px';
-        en.ui.firstChild.style.width = (en.hp / en.max) * 100 + '%';
-    });
+    camera.position.lerp(
+        new THREE.Vector3(
+            player.position.x,
+            12,
+            player.position.z + 10
+        ),
+        0.08
+    );
+    camera.lookAt(player.position);
 
-    if(invuln > 0) { 
-        invuln--; 
-        pSprite.visible = (invuln % 4 > 1);
-        if(activePowerups['SHIELD']) {
-            pSprite.material.color.setHex(0x4444ff);
-        }
-    } else {
-        pSprite.visible = true;
-        pSprite.material.color.setHex(0x00ffff);
-    }
-    
-    // Animate lights
-    lights.forEach((light, i) => {
-        light.intensity = 2 + Math.sin(Date.now() * 0.001 + i) * 0.5;
-    });
-    
-    drawMinimap();
     composer.render();
 }
 
-// Mobile Setup
-function setupJoystick(id, knobId, isAim = false) {
-    const container = document.getElementById(id);
-    const knob = document.getElementById(knobId);
-    let touchId = null;
-    const handleTouch = (touch) => {
-        const rect = container.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        let dx = touch.clientX - centerX;
-        let dy = touch.clientY - centerY;
-        const dist = Math.min(50, Math.sqrt(dx*dx + dy*dy));
-        const angle = Math.atan2(dy, dx);
-        knob.style.transform = `translate(calc(-50% + ${Math.cos(angle)*dist}px), calc(-50% + ${Math.sin(angle)*dist}px))`;
-        if(isAim) aimInput.set(Math.cos(angle), Math.sin(angle));
-        else moveInput.set(Math.cos(angle) * (dist/50), Math.sin(angle) * (dist/50));
-    };
-    container.addEventListener('touchstart', (e) => {
-        const touch = e.changedTouches[0];
-        touchId = touch.identifier;
-        if(isAim) isFiring = true;
-        handleTouch(touch);
-    });
-    window.addEventListener('touchmove', (e) => {
-        for (let i=0; i<e.changedTouches.length; i++) {
-            if(e.changedTouches[i].identifier === touchId) handleTouch(e.changedTouches[i]);
-        }
-    });
-    const onEnd = (e) => {
-        for (let i=0; i<e.changedTouches.length; i++) {
-            if(e.changedTouches[i].identifier === touchId) {
-                touchId = null;
-                knob.style.transform = `translate(-50%, -50%)`;
-                if(isAim) { aimInput.set(0,0); isFiring = false; }
-                else moveInput.set(0,0);
-            }
-        }
-    };
-    window.addEventListener('touchend', onEnd);
-    window.addEventListener('touchcancel', onEnd);
-}
-
-setupJoystick('move-stick', 'move-knob', false);
-setupJoystick('aim-stick', 'aim-knob', true);
-document.getElementById('dash-btn').addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    if(dashCooldown <= 0) { dashActive = 12; dashCooldown = 40; invuln = 20; }
-});
-
-setInterval(() => { if(!isPaused && enemies.length < 18) spawnEnemy(); }, 1400);
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight; 
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    composer.setSize(window.innerWidth, window.innerHeight);
-});
-
-updateUI();
 animate();
 </script>
 </body>
