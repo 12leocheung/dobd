@@ -3,132 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Strike: Campaign Mode</title>
+    <title>Neon Strike: Urban Impact - Story Mode</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Orbitron', sans-serif; user-select: none; touch-action: none; cursor: crosshair; }
+        #ui { position: absolute; top: 10px; left: 10px; color: #fff; pointer-events: none; z-index: 10; width: calc(100% - 20px); }
+        .stat { font-size: clamp(14px, 4vw, 18px); color: #0ff; text-shadow: 0 0 10px #0ff; margin-bottom: 5px; }
+        #hearts-container { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+        .heart { width: 22px; height: 22px; background: #f0f; clip-path: path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'); transition: opacity 0.3s; }
+        .lost { opacity: 0.1; }
+        #armor-ui { color: #00aaff; font-weight: bold; margin-left: 15px; text-shadow: 0 0 10px #00aaff; }
         
-        /* UI LAYOUT */
-        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; }
+        #minimap { position: absolute; top: 10px; right: 10px; width: 150px; height: 150px; background: rgba(0, 0, 0, 0.7); border: 2px solid #0ff; border-radius: 8px; z-index: 15; }
+        #powerup-container { position: fixed; bottom: 220px; left: 20px; z-index: 20; display: flex; flex-direction: column; gap: 8px; }
+        .powerup-indicator { color: #fff; font-size: 14px; background: rgba(0, 0, 0, 0.8); padding: 8px 12px; border: 2px solid; border-radius: 6px; }
         
-        /* TOP ROW */
-        .top-row { display: flex; justify-content: space-between; padding: 15px; align-items: flex-start; }
-        
-        /* QUEST HUD (New) */
-        #quest-panel {
-            background: rgba(0, 20, 0, 0.8);
-            border: 1px solid #0f0;
-            padding: 10px;
+        /* --- ENHANCED STORY HUD --- */
+        #story-panel {
+            position: absolute;
+            top: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            pointer-events: none;
+            z-index: 12;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .mission-box {
+            background: rgba(0, 0, 30, 0.9);
+            border: 2px solid #0af;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.4);
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.4;
+            text-align: left;
+        }
+        .mission-title {
+            font-size: 16px;
+            color: #0ff;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #0af;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .mission-desc {
+            color: #aaf;
+            margin-bottom: 12px;
+            min-height: 40px;
+        }
+        .mission-progress {
+            background: rgba(0, 0, 0, 0.5);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .mission-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #0af, #0ff);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        .mission-objectives {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+            font-size: 12px;
+        }
+        .mission-objective {
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        .objective-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #0af;
+            border-radius: 3px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .objective-complete {
+            background: #0af;
+            color: #000;
+        }
+        .objective-text {
+            color: #ccf;
+        }
+        .mission-reward {
+            color: #ff0;
+            font-size: 12px;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        /* --- QUESTS SIDEBAR --- */
+        #quest-sidebar {
+            position: absolute;
+            top: 340px;
+            left: 10px;
             width: 250px;
-            border-radius: 0 0 15px 0;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
+            z-index: 11;
             pointer-events: none;
         }
-        .quest-header { color: #0f0; font-size: 12px; letter-spacing: 2px; margin-bottom: 5px; border-bottom: 1px solid #0f0; padding-bottom: 2px; }
-        .quest-title { color: #fff; font-size: 14px; margin-bottom: 5px; font-weight: bold; }
-        .quest-desc { color: #aaa; font-size: 11px; margin-bottom: 8px; }
-        .progress-track { width: 100%; height: 6px; background: #111; border: 1px solid #555; border-radius: 3px; overflow: hidden; }
-        .progress-fill { height: 100%; width: 0%; background: #0f0; transition: width 0.3s ease-out; box-shadow: 0 0 10px #0f0; }
-
-        /* MINIMAP */
-        #minimap-container { position: relative; width: 120px; height: 120px; border: 2px solid #0ff; background: rgba(0,0,0,0.8); border-radius: 50%; overflow: hidden; }
-        #minimap { width: 100%; height: 100%; }
-
-        /* STATS (Bottom Left) */
-        #stats-panel { position: absolute; top: 180px; left: 15px; }
-        .stat-row { color: #fff; text-shadow: 0 0 5px #0ff; font-size: 14px; margin-bottom: 4px; }
-        #hearts { display: flex; gap: 5px; margin-top: 5px; }
-        .heart { width: 18px; height: 18px; background: #f0f; clip-path: path('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'); }
-        .heart.lost { opacity: 0.2; }
-
-        /* TRANSMISSION (Center Story) */
-        #transmission-panel {
-            position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; max-width: 600px; text-align: center;
-            opacity: 0; transition: opacity 0.5s; pointer-events: none;
+        .quest-item {
+            background: rgba(0, 20, 40, 0.85);
+            border: 1px solid #08f;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            color: #fff;
+            font-size: 12px;
+            box-shadow: 0 0 10px rgba(0, 100, 255, 0.3);
         }
-        .trans-box { background: rgba(0,0,0,0.9); border: 1px solid #0ff; padding: 20px; color: #0ff; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
-        .trans-sender { font-size: 10px; letter-spacing: 3px; color: #fff; margin-bottom: 10px; border-bottom: 1px solid #333; display: inline-block; }
-        .trans-text { font-size: 16px; line-height: 1.5; text-shadow: 0 0 5px #0ff; }
-
-        /* CONTROLS & SHOP */
-        #powerup-container { position: absolute; bottom: 200px; left: 20px; display: flex; flex-direction: column; gap: 5px; }
-        .powerup-tag { background: rgba(0,0,0,0.7); border: 1px solid #fff; color: #fff; padding: 4px 8px; font-size: 12px; border-radius: 4px; }
-
-        #dash-btn { position: absolute; bottom: 140px; right: 30px; width: 70px; height: 70px; border-radius: 50%; border: 2px solid #f0f; background: rgba(255,0,255,0.2); color: #f0f; display: flex; align-items: center; justify-content: center; font-weight: bold; pointer-events: auto; }
-        #shop-btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 10px 30px; border: 2px solid #0ff; background: #000; color: #0ff; font-family: 'Orbitron'; cursor: pointer; pointer-events: auto; border-radius: 5px; }
+        .quest-title {
+            color: #0ff;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .quest-progress {
+            height: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 2px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+        .quest-progress-bar {
+            height: 100%;
+            background: #0ff;
+            width: 0%;
+            transition: width 0.3s;
+        }
         
-        #shop-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 100; display: none; align-items: center; justify-content: center; flex-direction: column; }
-        #shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 90%; max-width: 500px; }
-        .shop-item { border: 1px solid #0ff; padding: 15px; color: #fff; text-align: center; cursor: pointer; transition: 0.2s; background: #111; }
-        .shop-item:hover { background: #002222; }
-        .shop-item.locked { opacity: 0.5; border-color: #555; color: #555; pointer-events: none; }
+        /* --- MISSION COMPLETE OVERLAY --- */
+        #mission-complete-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            pointer-events: all;
+        }
+        .mission-complete-box {
+            background: linear-gradient(135deg, #001144, #000022);
+            border: 3px solid #0ff;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 0 40px #0ff;
+        }
+        .mission-complete-title {
+            color: #0ff;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px #0ff;
+        }
+        .mission-reward-list {
+            color: #ff0;
+            font-size: 18px;
+            margin: 20px 0;
+        }
+        .continue-btn {
+            background: #000;
+            border: 2px solid #0ff;
+            color: #0ff;
+            padding: 12px 30px;
+            font-family: 'Orbitron';
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .continue-btn:hover {
+            background: #0ff;
+            color: #000;
+        }
 
-        .enemy-hp { position: absolute; width: 40px; height: 4px; background: #300; border: 1px solid #555; transform: translate(-50%, -50%); pointer-events: none; }
-        .enemy-hp-bar { height: 100%; background: #f00; width: 100%; transition: width 0.1s; }
+        .mobile-ctrl { display: none; }
+        @media (pointer: coarse) { .mobile-ctrl { display: block; } }
 
-        /* Mobile Joysticks */
-        .joystick-zone { position: absolute; bottom: 40px; width: 100px; height: 100px; border: 2px solid rgba(0,255,255,0.2); border-radius: 50%; pointer-events: auto; }
-        #stick-l { left: 20px; } #stick-r { right: 20px; }
-        .knob { width: 40px; height: 40px; background: #0ff; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px #0ff; }
+        .joystick-container { position: absolute; bottom: 40px; width: 100px; height: 100px; background: rgba(0, 255, 255, 0.1); border: 2px solid rgba(0, 255, 255, 0.3); border-radius: 50%; z-index: 20; }
+        #move-stick { left: 20px; }
+        #aim-stick { right: 20px; }
+        .knob { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; background: #0ff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px #0ff; }
         
-        .mobile-only { display: none; }
-        @media (pointer: coarse) { .mobile-only { display: block; } }
+        #dash-btn { position: absolute; bottom: 150px; right: 30px; width: 60px; height: 60px; background: rgba(255, 0, 255, 0.3); border: 2px solid #f0f; color: #f0f; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 10px; z-index: 25; font-weight: bold; }
+        #shop-btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; background: #000; border: 2px solid #0ff; color: #0ff; z-index: 30; cursor: pointer; border-radius: 8px; font-family: 'Orbitron'; }
+        #wheel-overlay { position: absolute; inset: 0; display: none; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 100; }
+        #shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 90%; max-width: 400px; }
+        .shop-item { background: #111; border: 2px solid #0ff; color: #0ff; padding: 15px; text-align: center; border-radius: 10px; font-size: 11px; cursor: pointer; }
+        
+        .enemy-health-wrap { position: absolute; width: 35px; height: 4px; background: #200; border: 1px solid #f0f; pointer-events: none; transform: translate(-50%, -50%); }
+        .enemy-health-bar { width: 100%; height: 100%; background: #f0f; transition: width 0.1s; }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
-    <div id="ui-layer">
-        <div class="top-row">
-            <div id="quest-panel">
-                <div class="quest-header">CURRENT OBJECTIVE</div>
-                <div class="quest-title" id="q-title">PHASE 1: CALIBRATION</div>
-                <div class="quest-desc" id="q-desc">Kill 3 Drones to calibrate sensors.</div>
-                <div class="progress-track">
-                    <div class="progress-fill" id="q-bar"></div>
-                </div>
-            </div>
-
-            <div id="minimap-container">
-                <canvas id="minimap"></canvas>
-            </div>
-        </div>
-
-        <div id="stats-panel">
-            <div class="stat-row" id="cash-ui">CASH: $500</div>
-            <div class="stat-row" id="wpn-ui">WEAPON: PISTOL</div>
-            <div class="stat-row" id="armor-ui">ARMOR: 0</div>
-            <div id="hearts">
-                <div class="heart" id="h1"></div><div class="heart" id="h2"></div><div class="heart" id="h3"></div>
-            </div>
-        </div>
-
-        <div id="transmission-panel">
-            <div class="trans-box">
-                <div class="trans-sender">INCOMING TRANSMISSION // COMMAND</div>
-                <div class="trans-text" id="trans-text">System Online.</div>
-            </div>
-        </div>
-        
-        <div id="powerup-container"></div>
-        <button id="shop-btn" onclick="toggleShop()">OPEN SHOP (Q)</button>
-        <div id="dash-btn" class="mobile-only">DASH</div>
-        <div id="stick-l" class="joystick-zone mobile-only"><div class="knob" id="knob-l"></div></div>
-        <div id="stick-r" class="joystick-zone mobile-only"><div class="knob" id="knob-r"></div></div>
-    </div>
-
-    <div id="shop-overlay">
-        <h2 style="color:#0ff; margin-bottom:20px;">BLACK MARKET</h2>
-        <div id="shop-grid">
-            <div class="shop-item" onclick="purchase('PISTOL')">UPGRADE PISTOL ($200)</div>
-            <div class="shop-item" onclick="purchase('SHOTGUN')">BUY SHOTGUN ($500)</div>
-            <div class="shop-item" onclick="purchase('SMG')">BUY SMG ($1200)</div>
-            <div class="shop-item" onclick="purchase('RAILGUN')">BUY RAILGUN ($2500)</div>
-            <div class="shop-item" onclick="purchase('FLAMETHROWER')">BUY FLAMETHROWER ($1800)</div>
-            <div class="shop-item" onclick="purchase('SPEED')">SERVO UPGRADE ($300)</div>
-            <div class="shop-item" onclick="toggleShop()" style="background:#300; border-color:#f00;">CLOSE</div>
+    <div id="ui">
+        <div class="stat" id="cash-ui">CASH: $500</div>
+        <div class="stat" id="weapon-ui" style="color: #f0f;">WEAPON: PISTOL</div>
+        <div id="hearts-container">
+            <div class="heart" id="h1"></div><div class="heart" id="h2"></div><div class="heart" id="h3"></div>
+            <div id="armor-ui">ARMOR: 0</div>
         </div>
     </div>
+
+    <!-- Main Mission Display -->
+    <div id="story-panel">
+        <div class="mission-box">
+            <div class="mission-title">
+                <span id="mission-name">MISSION 1: INITIAL CONTACT</span>
+                <span id="mission-counter">0/5</span>
+            </div>
+            <div class="mission-desc" id="mission-desc">
+                Neutralize initial AI constructs to secure the perimeter.
+            </div>
+            <div class="mission-progress">
+                <div class="mission-progress-bar" id="mission-progress-bar"></div>
+            </div>
+            <ul class="mission-objectives" id="mission-objectives">
+                <li class="mission-objective">
+                    <div class="objective-checkbox"></div>
+                    <span class="objective-text">Kill 5 AI constructs</span>
+                </li>
+                <li class="mission-objective">
+                    <div class="objective-checkbox"></div>
+                    <span class="objective-text">Collect 2 supply crates</span>
+                </li>
+                <li class="mission-objective">
+                    <div class="objective-checkbox"></div>
+                    <span class="objective-text">Survive for 2 minutes</span>
+                </li>
+            </ul>
+            <div class="mission-reward" id="mission-reward">REWARD: $1000 + SHOTGUN ACCESS</div>
+        </div>
+    </div>
+
+    <!-- Active Quests Sidebar -->
+    <div id="quest-sidebar">
+        <!-- Quests will be dynamically added here -->
+    </div>
+
+    <!-- Mission Complete Overlay -->
+    <div id="mission-complete-overlay">
+        <div class="mission-complete-box">
+            <div class="mission-complete-title">MISSION ACCOMPLISHED</div>
+            <div id="mission-complete-desc"></div>
+            <div class="mission-reward-list" id="mission-reward-list"></div>
+            <button class="continue-btn" onclick="nextMission()">CONTINUE TO NEXT MISSION</button>
+        </div>
+    </div>
+
+    <canvas id="minimap"></canvas>
+    <div id="powerup-container"></div>
+
+    <div id="dash-btn" class="mobile-ctrl">DASH</div>
+    <button id="shop-btn" onclick="toggleShop()">SHOP (Q)</button>
+
+    <div id="wheel-overlay" onclick="toggleShop()">
+        <div id="shop-grid" onclick="event.stopPropagation()">
+            <div class="shop-item" onclick="buyOrUpgrade('PISTOL', 0)">PISTOL LVL+ ($200)</div>
+            <div class="shop-item" onclick="buyOrUpgrade('SHOTGUN', 500)">SHOTGUN ($500)</div>
+            <div class="shop-item" onclick="buyOrUpgrade('SMG', 1200)">SMG ($1200)</div>
+            <div class="shop-item" onclick="buyOrUpgrade('RAILGUN', 2500)">RAILGUN ($2500)</div>
+            <div class="shop-item" onclick="buyOrUpgrade('FLAMETHROWER', 1800)">FLAMETHROWER ($1800)</div>
+            <div class="shop-item" onclick="buyOrUpgrade('LASER', 3500)">LASER ($3500)</div>
+            <div class="shop-item" onclick="buyOrUpgrade('SPEED', 300)">BOOTS ($300)</div>
+            <div class="shop-item" onclick="toggleShop()" style="background: #222; border-color: #fff;">BACK</div>
+        </div>
+    </div>
+
+    <div id="move-stick" class="joystick-container mobile-ctrl"><div class="knob" id="move-knob"></div></div>
+    <div id="aim-stick" class="joystick-container mobile-ctrl"><div class="knob" id="aim-knob"></div></div>
 
 <script type="importmap">
     { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
@@ -140,602 +301,970 @@ import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examp
 import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 
-// --- CAMPAIGN CONFIGURATION ---
-const CAMPAIGN = [
-    {
-        id: 0,
-        title: "PHASE 1: CALIBRATION",
-        desc: "Eliminate Hostiles",
-        type: 'KILL',
-        target: 3,
-        startMsg: "Operative, Sector 7 is overrun. Test your targeting systems on the initial wave.",
-        endMsg: "Systems calibrated. Readings indicate supply caches nearby."
-    },
+// --- ENHANCED STORY SYSTEM ---
+const missions = [
     {
         id: 1,
-        title: "PHASE 2: RESUPPLY",
-        desc: "Loot Supply Chests",
-        type: 'LOOT',
-        target: 2,
-        startMsg: "You'll need resources for the battles ahead. Locate and open 2 Supply Chests.",
-        endMsg: "Resources acquired. Warning: Heavy signal detected."
+        name: "INITIAL CONTACT",
+        description: "Neutralize initial AI constructs to secure the perimeter.",
+        objectives: [
+            { type: "KILL", target: 5, current: 0 },
+            { type: "CHEST", target: 2, current: 0 },
+            { type: "SURVIVE", target: 120, current: 0 } // seconds
+        ],
+        reward: { cash: 1000, unlock: "SHOTGUN", message: "Shotgun now available in shop!" },
+        story: "OPERATIVE 7: Sector 09 has gone dark. The AI constructs have revolted. Your first objective is to clear the immediate area."
     },
     {
         id: 2,
-        title: "PHASE 3: THE SWARM",
-        desc: "Purge the Area",
-        type: 'KILL',
-        target: 10,
-        startMsg: "The Glitch is reacting to your presence. A swarm is converging. Survive.",
-        endMsg: "Swarm neutralized. The constructs are adapting."
+        name: "RESOURCE ACQUISITION",
+        description: "Scavenge resources and eliminate upgraded threats.",
+        objectives: [
+            { type: "KILL", target: 15, current: 0 },
+            { type: "CHEST", target: 5, current: 0 },
+            { type: "CASH", target: 2000, current: 0 }
+        ],
+        reward: { cash: 1500, unlock: "SMG", message: "SMG unlocked! Increased fire rate available." },
+        story: "HQ: Good start. They're dropping resources from the old supply grid. Scavenge those crates and watch for evolving constructs."
     },
     {
         id: 3,
-        title: "PHASE 4: UPGRADE",
-        desc: "Purchase a Weapon",
-        type: 'BUY',
-        target: 1,
-        startMsg: "Your pistol won't cut it. Access the Black Market (Press Q or Shop Button) and buy a new weapon.",
-        endMsg: "Firepower authorized. Let's make some noise."
+        name: "CORRUPTION PURGE",
+        description: "Destroy the corrupted heavy constructs.",
+        objectives: [
+            { type: "KILL", target: 30, current: 0 },
+            { type: "BIG_KILL", target: 3, current: 0 },
+            { type: "WEAPON", target: "SHOTGUN", level: 2 }
+        ],
+        reward: { cash: 2500, unlock: "FLAMETHROWER", message: "Flamethrower acquired! Perfect for crowd control." },
+        story: "HQ: Energy spikes detected. The constructs are evolving into heavy units. Use your upgraded arsenal to purge them."
     },
     {
         id: 4,
-        title: "PHASE 5: TOTAL WAR",
-        desc: "Eliminate Hostiles",
-        type: 'KILL',
-        target: 25,
-        startMsg: "Command has authorized full lethal force. Clear the sector completely.",
-        endMsg: "Sector Clear. Infinite Survival Mode Initiated."
+        name: "INFRASTRUCTURE SECURE",
+        description: "Secure the area and eliminate high-value targets.",
+        objectives: [
+            { type: "KILL", target: 50, current: 0 },
+            { type: "BIG_KILL", target: 8, current: 0 },
+            { type: "CASH", target: 5000, current: 0 }
+        ],
+        reward: { cash: 4000, unlock: "RAILGUN", message: "Railgun authorized! Penetrate enemy armor with ease." },
+        story: "HQ: We're reading data corruption in the building infrastructure. This infection is deep. Secure the perimeter completely."
     },
     {
         id: 5,
-        title: "SURVIVAL: INFINITE",
-        desc: "Survive as long as possible",
-        type: 'KILL',
-        target: 9999,
-        startMsg: "You are on your own now, Operative. Good luck.",
-        endMsg: ""
+        name: "FINAL STRIKE",
+        description: "Eliminate the AI core and complete the mission.",
+        objectives: [
+            { type: "KILL", target: 80, current: 0 },
+            { type: "BIG_KILL", target: 15, current: 0 },
+            { type: "WEAPON", target: "RAILGUN", level: 1 }
+        ],
+        reward: { cash: 10000, unlock: "LASER", message: "Laser weapon unlocked! Maximum firepower achieved." },
+        story: "HQ: Warning. Heavy signals approaching. They know you're here. This is the final push - destroy the AI core!"
+    },
+    {
+        id: 6,
+        name: "INFINITE SUPPRESSION",
+        description: "Endless mode activated. Survive as long as possible.",
+        objectives: [
+            { type: "KILL", target: 200, current: 0 },
+            { type: "SURVIVE", target: 300, current: 0 },
+            { type: "CASH", target: 15000, current: 0 }
+        ],
+        reward: { cash: 20000, unlock: "ALL", message: "All weapons unlocked! Legendary status achieved." },
+        story: "HQ: You are a legend, Operative. The core is destabilized. Continue suppression until extraction arrives."
     }
 ];
 
-// --- GAME STATE ---
-let missionIdx = 0;
-let missionProgress = 0;
-let cash = 500, lives = 3, armor = 0;
-let isPaused = false, isFiring = false;
-let pSpeed = 0.18, currentWpn = 'PISTOL';
+let currentMission = 0;
+let missionStartTime = Date.now();
+let chestsCollected = 0;
+let bigEnemiesKilled = 0;
+let quests = [];
+
+// Initialize first mission
+function startMission(missionIndex) {
+    currentMission = missionIndex;
+    const mission = missions[missionIndex];
+    missionStartTime = Date.now();
+    chestsCollected = 0;
+    bigEnemiesKilled = 0;
+    
+    // Reset objectives
+    mission.objectives.forEach(obj => obj.current = 0);
+    
+    // Update UI
+    updateMissionUI();
+    
+    // Show story
+    showMissionStory(mission.story);
+    
+    // Add to quests
+    addQuest(mission);
+}
+
+function updateMissionUI() {
+    const mission = missions[currentMission];
+    const panel = document.getElementById('story-panel');
+    
+    // Show panel for 10 seconds after mission start
+    panel.style.opacity = '1';
+    setTimeout(() => {
+        if (currentMission === missions.indexOf(mission)) {
+            panel.style.opacity = '0.7';
+        }
+    }, 10000);
+    
+    // Update mission info
+    document.getElementById('mission-name').textContent = `MISSION ${mission.id}: ${mission.name}`;
+    document.getElementById('mission-desc').textContent = mission.description;
+    document.getElementById('mission-reward').textContent = `REWARD: $${mission.reward.cash} + ${mission.reward.unlock}`;
+    
+    // Update objectives
+    const objectivesList = document.getElementById('mission-objectives');
+    objectivesList.innerHTML = '';
+    
+    let totalProgress = 0;
+    let maxProgress = mission.objectives.length;
+    
+    mission.objectives.forEach((obj, index) => {
+        const li = document.createElement('li');
+        li.className = 'mission-objective';
+        
+        const checkbox = document.createElement('div');
+        checkbox.className = 'objective-checkbox';
+        
+        const progress = Math.min(obj.current / obj.target, 1);
+        if (progress >= 1) {
+            checkbox.classList.add('objective-complete');
+            checkbox.innerHTML = '✓';
+            totalProgress += 1;
+        }
+        
+        const text = document.createElement('span');
+        text.className = 'objective-text';
+        
+        let objectiveText = '';
+        switch(obj.type) {
+            case 'KILL':
+                objectiveText = `Eliminate ${obj.target} enemies (${obj.current}/${obj.target})`;
+                break;
+            case 'BIG_KILL':
+                objectiveText = `Destroy ${obj.target} heavy constructs (${obj.current}/${obj.target})`;
+                break;
+            case 'CHEST':
+                objectiveText = `Collect ${obj.target} supply crates (${chestsCollected}/${obj.target})`;
+                obj.current = chestsCollected;
+                break;
+            case 'CASH':
+                objectiveText = `Accumulate $${obj.target} ($${cash}/${obj.target})`;
+                obj.current = cash;
+                break;
+            case 'SURVIVE':
+                const survived = Math.floor((Date.now() - missionStartTime) / 1000);
+                obj.current = survived;
+                objectiveText = `Survive for ${obj.target} seconds (${survived}/${obj.target})`;
+                break;
+            case 'WEAPON':
+                const wpn = weapons[obj.target];
+                const hasWeapon = wpn && wpn.owned;
+                const hasLevel = hasWeapon && wpn.level >= obj.level;
+                obj.current = hasLevel ? 1 : 0;
+                objectiveText = `Acquire ${obj.target} level ${obj.level}`;
+                if (hasWeapon) objectiveText += ` (Level ${wpn.level})`;
+                break;
+        }
+        
+        text.textContent = objectiveText;
+        
+        li.appendChild(checkbox);
+        li.appendChild(text);
+        objectivesList.appendChild(li);
+    });
+    
+    // Update progress bar
+    const progressPercent = (totalProgress / maxProgress) * 100;
+    document.getElementById('mission-progress-bar').style.width = `${progressPercent}%`;
+    document.getElementById('mission-counter').textContent = `${totalProgress}/${maxProgress}`;
+    
+    // Check if mission is complete
+    if (totalProgress >= maxProgress) {
+        completeMission();
+    }
+}
+
+function updateQuestProgress() {
+    const questSidebar = document.getElementById('quest-sidebar');
+    questSidebar.innerHTML = '';
+    
+    quests.forEach(quest => {
+        const questEl = document.createElement('div');
+        questEl.className = 'quest-item';
+        
+        const title = document.createElement('div');
+        title.className = 'quest-title';
+        title.innerHTML = `<span>${quest.name}</span><span>${quest.current}/${quest.target}</span>`;
+        
+        const progress = document.createElement('div');
+        progress.className = 'quest-progress';
+        
+        const progressBar = document.createElement('div');
+        progressBar.className = 'quest-progress-bar';
+        progressBar.style.width = `${(quest.current / quest.target) * 100}%`;
+        
+        progress.appendChild(progressBar);
+        questEl.appendChild(title);
+        questEl.appendChild(progress);
+        
+        questSidebar.appendChild(questEl);
+    });
+}
+
+function addQuest(mission) {
+    // Add kill quest
+    quests.push({
+        name: `Kills for Mission ${mission.id}`,
+        type: 'KILL',
+        current: 0,
+        target: mission.objectives.find(o => o.type === 'KILL')?.target || 0
+    });
+    
+    // Add chest quest if exists
+    const chestObj = mission.objectives.find(o => o.type === 'CHEST');
+    if (chestObj) {
+        quests.push({
+            name: `Collect Supplies`,
+            type: 'CHEST',
+            current: 0,
+            target: chestObj.target
+        });
+    }
+    
+    updateQuestProgress();
+}
+
+function updateQuest(type, amount = 1) {
+    quests.forEach(quest => {
+        if (quest.type === type) {
+            quest.current = Math.min(quest.current + amount, quest.target);
+        }
+    });
+    updateQuestProgress();
+}
+
+function showMissionStory(text) {
+    const panel = document.getElementById('story-panel');
+    panel.style.opacity = '1';
+    
+    const desc = document.getElementById('mission-desc');
+    desc.textContent = text;
+    
+    setTimeout(() => {
+        if (panel.style.opacity === '1') {
+            panel.style.opacity = '0.7';
+        }
+    }, 8000);
+}
+
+function completeMission() {
+    const mission = missions[currentMission];
+    
+    // Grant rewards
+    cash += mission.reward.cash;
+    if (mission.reward.unlock === "ALL") {
+        Object.keys(weapons).forEach(wpn => {
+            weapons[wpn].owned = true;
+        });
+    } else if (weapons[mission.reward.unlock]) {
+        weapons[mission.reward.unlock].owned = true;
+    }
+    
+    // Show completion screen
+    const overlay = document.getElementById('mission-complete-overlay');
+    const desc = document.getElementById('mission-complete-desc');
+    const rewardList = document.getElementById('mission-reward-list');
+    
+    desc.textContent = `Mission ${mission.id}: ${mission.name} completed successfully!`;
+    rewardList.innerHTML = `
+        <div>+ $${mission.reward.cash} CREDITS</div>
+        <div>+ ${mission.reward.unlock} UNLOCKED</div>
+        <div style="color:#0ff; margin-top:10px;">${mission.reward.message}</div>
+    `;
+    
+    overlay.style.display = 'flex';
+    isPaused = true;
+    
+    updateUI();
+}
+
+window.nextMission = function() {
+    const overlay = document.getElementById('mission-complete-overlay');
+    overlay.style.display = 'none';
+    isPaused = false;
+    
+    if (currentMission < missions.length - 1) {
+        startMission(currentMission + 1);
+    } else {
+        // Restart from mission 1 with increased difficulty
+        startMission(0);
+        showMissionStory("HQ: Excellent work, Operative. Beginning new campaign with increased threat level.");
+    }
+    
+    // Clear old quests
+    quests = [];
+};
+
+// --- STATE ---
+let cash = 500, isPaused = false, isFiring = false;
+let lives = 3, armor = 0, invuln = 0, lastFire = 0, pSpeed = 0.18, currentWpn = 'PISTOL';
 let shakeIntensity = 0;
-let dashCooldown = 0, dashActive = 0, invuln = 0;
+let dashCooldown = 0, dashActive = 0;
+let killCount = 0;
 
 const bullets = [], enemies = [], buildings = [], chests = [], drops = [], keys = {};
 const moveInput = new THREE.Vector2(), aimInput = new THREE.Vector2();
 const activePowerups = {};
 const muzzleFlashes = [];
 const particles = [];
-let lastFire = 0;
 
-// WEAPONS DATA
+const mouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+let mouseShooting = false;
+
 const weapons = {
     PISTOL: { level: 1, owned: true, fireRate: 350, dmg: 1.5, color: 0xffff00, shake: 0.4, spread: 0.05 },
-    SHOTGUN: { level: 0, owned: false, fireRate: 800, dmg: 1.2, color: 0xffaa00, shake: 1.8, spread: 0.35 },
-    SMG: { level: 0, owned: false, fireRate: 100, dmg: 0.5, color: 0x00ffff, shake: 0.2, spread: 0.15 },
+    SHOTGUN: { level: 0, owned: false, fireRate: 800, dmg: 1.2, color: 0xffaa00, shake: 1.8, spread: 0.4 },
+    SMG: { level: 0, owned: false, fireRate: 100, dmg: 0.5, color: 0x00ffff, shake: 0.2, spread: 0.2 },
     RAILGUN: { level: 0, owned: false, fireRate: 1500, dmg: 25, color: 0xffffff, shake: 4.5, spread: 0 },
-    FLAMETHROWER: { level: 0, owned: false, fireRate: 50, dmg: 0.3, color: 0xff4400, shake: 0.1, spread: 0.25 }
+    FLAMETHROWER: { level: 0, owned: false, fireRate: 50, dmg: 0.3, color: 0xff4400, shake: 0.1, spread: 0.3 },
+    LASER: { level: 0, owned: false, fireRate: 80, dmg: 2.0, color: 0x00ff00, shake: 0.3, spread: 0 }
 };
 
-// --- THREE.JS SETUP ---
+// --- THREE SETUP ---
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x020205);
-scene.fog = new THREE.FogExp2(0x020205, 0.015);
+scene.background = new THREE.Color(0x010103);
+scene.fog = new THREE.FogExp2(0x010103, 0.015);
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ReinhardToneMapping;
 document.body.appendChild(renderer.domElement);
 
-// Post Processing
+// Bloom setup
 const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.5, 0.3));
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    1.2, 0.5, 0.3
+);
+composer.addPass(bloomPass);
 
-// Player
+// Player sprite
 const player = new THREE.Group();
-const pGeo = new THREE.BoxGeometry(0.8, 1.8, 0.8);
-const pMat = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 0.5 });
-const pMesh = new THREE.Mesh(pGeo, pMat);
-pMesh.position.y = 0.9;
-player.add(pMesh);
+const canvas = document.createElement('canvas');
+canvas.width = 64; canvas.height = 64;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#00ffff';
+ctx.beginPath();
+ctx.arc(32, 20, 12, 0, Math.PI * 2);
+ctx.fill();
+ctx.fillRect(24, 32, 16, 24);
+ctx.fillRect(20, 40, 8, 16);
+ctx.fillRect(36, 40, 8, 16);
+const pTexture = new THREE.CanvasTexture(canvas);
+const pMat = new THREE.SpriteMaterial({ map: pTexture, color: 0x00ffff });
+const pSprite = new THREE.Sprite(pMat);
+pSprite.scale.set(1.5, 1.5, 1);
+player.add(pSprite);
+player.position.y = 0.5;
 scene.add(player);
 
-// World
-const grid = new THREE.GridHelper(200, 60, 0x004444, 0x001111);
+const grid = new THREE.GridHelper(200, 60, 0x00ffff, 0x050510);
 scene.add(grid);
-scene.add(new THREE.AmbientLight(0xffffff, 0.2));
-const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+const sun = new THREE.DirectionalLight(0xffffff, 1.0);
 sun.position.set(10, 20, 10);
 scene.add(sun);
 
-// --- MISSION SYSTEM ---
-function initMission() {
-    const m = CAMPAIGN[missionIdx];
-    missionProgress = 0;
-    
-    // UI Update
-    document.getElementById('q-title').innerText = m.title;
-    document.getElementById('q-desc').innerText = m.desc + ` (0/${m.target})`;
-    document.getElementById('q-bar').style.width = '0%';
-    
-    // Transmission
-    if(m.startMsg) showTransmission(m.startMsg);
+// Point lights for atmosphere
+const lights = [];
+for(let i=0; i<5; i++) {
+    const light = new THREE.PointLight(i % 2 ? 0xff00ff : 0x00ffff, 2, 30);
+    light.position.set((Math.random()-0.5)*80, 5, (Math.random()-0.5)*80);
+    scene.add(light);
+    lights.push(light);
 }
 
-function updateMission(type, amount) {
-    const m = CAMPAIGN[missionIdx];
-    if(m.type === type) {
-        missionProgress += amount;
-        
-        // Clamp
-        if(missionProgress > m.target) missionProgress = m.target;
-        
-        // UI
-        const pct = (missionProgress / m.target) * 100;
-        document.getElementById('q-bar').style.width = pct + '%';
-        document.getElementById('q-desc').innerText = m.desc + ` (${missionProgress}/${m.target})`;
-        
-        // Check Complete
-        if(missionProgress >= m.target && missionIdx < CAMPAIGN.length - 1) {
-            if(m.endMsg) showTransmission(m.endMsg);
-            missionIdx++;
-            setTimeout(initMission, 4000); // Delay next mission start so player can read endMsg
-        }
-    }
+// --- SPRITE HELPERS ---
+function createEnemySprite(isBig) {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 64;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = isBig ? '#ff0000' : '#ff00ff';
+    ctx.beginPath();
+    ctx.arc(32, 32, isBig ? 28 : 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(20, 24, 8, 8);
+    ctx.fillRect(36, 24, 8, 8);
+    ctx.fillRect(24, 40, 16, 4);
+    const tex = new THREE.CanvasTexture(c);
+    const mat = new THREE.SpriteMaterial({ map: tex });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(isBig ? 3 : 2, isBig ? 3 : 2, 1);
+    return sprite;
 }
 
-function showTransmission(text) {
-    const panel = document.getElementById('transmission-panel');
-    const txt = document.getElementById('trans-text');
-    panel.style.opacity = 1;
-    txt.innerText = '';
-    
-    let i = 0;
-    const interval = setInterval(() => {
-        txt.innerText += text.charAt(i);
-        i++;
-        if(i >= text.length) {
-            clearInterval(interval);
-            setTimeout(() => { panel.style.opacity = 0; }, 4000);
-        }
-    }, 30);
+function createMuzzleFlash(pos) {
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ 
+        color: 0xffff00, 
+        transparent: true,
+        opacity: 1.0
+    }));
+    sprite.position.copy(pos);
+    sprite.scale.set(1.5, 1.5, 1);
+    scene.add(sprite);
+    muzzleFlashes.push({ sprite, life: 3 });
 }
 
-// --- GAMEPLAY HELPERS ---
+function createParticle(pos, color) {
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ 
+        color, 
+        transparent: true,
+        opacity: 1.0
+    }));
+    sprite.position.copy(pos);
+    sprite.scale.set(0.3, 0.3, 1);
+    const vel = new THREE.Vector3(
+        (Math.random()-0.5)*0.2,
+        Math.random()*0.3,
+        (Math.random()-0.5)*0.2
+    );
+    scene.add(sprite);
+    particles.push({ sprite, vel, life: 20 });
+}
+
+// --- WORLD GENERATION ---
 function createBuildings() {
-    for(let i=0; i<25; i++) {
+    for(let i=0; i<20; i++) {
+        const w = 4 + Math.random() * 6;
         const h = 5 + Math.random() * 15;
-        const geo = new THREE.BoxGeometry(5 + Math.random()*5, h, 5 + Math.random()*5);
-        const mat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 });
-        const mesh = new THREE.Mesh(geo, mat);
-        
-        // Random Pos but keep center clear
-        let x, z;
+        const d = 4 + Math.random() * 6;
+        const geom = new THREE.BoxGeometry(w, h, d);
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0x111122, 
+            emissive: 0x00ffff, 
+            emissiveIntensity: 0.2,
+            metalness: 0.8,
+            roughness: 0.3
+        });
+        const b = new THREE.Mesh(geom, mat);
+        let rx, rz;
         do {
-            x = (Math.random()-0.5) * 120;
-            z = (Math.random()-0.5) * 120;
-        } while(Math.abs(x) < 15 && Math.abs(z) < 15);
-        
-        mesh.position.set(x, h/2, z);
-        
-        // Neon Edges
-        const edges = new THREE.EdgesGeometry(geo);
-        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffff }));
-        mesh.add(line);
-        
-        scene.add(mesh);
-        buildings.push({ mesh, box: new THREE.Box3().setFromObject(mesh) });
+            rx = (Math.random() - 0.5) * 100;
+            rz = (Math.random() - 0.5) * 100;
+        } while (Math.abs(rx) < 12 && Math.abs(rz) < 12);
+        b.position.set(rx, h/2, rz);
+        scene.add(b);
+        buildings.push({ mesh: b, box: new THREE.Box3().setFromObject(b) });
     }
 }
 
 function spawnChest() {
-    const geo = new THREE.BoxGeometry(1.5, 1, 1.5);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x442200, emissive: 0xffaa00, emissiveIntensity: 0.5 });
-    const mesh = new THREE.Mesh(geo, mat);
-    
-    let x, z, valid = false;
-    while(!valid) {
-        x = (Math.random()-0.5) * 90;
-        z = (Math.random()-0.5) * 90;
-        const testPos = new THREE.Vector3(x, 0.5, z);
-        valid = !buildings.some(b => b.box.containsPoint(testPos));
-    }
-    
-    mesh.position.set(x, 0.5, z);
-    scene.add(mesh);
-    chests.push(mesh);
-}
-
-function spawnEnemy() {
-    const isBig = Math.random() > 0.9;
-    const color = isBig ? 0xff0000 : 0xff00ff;
-    
-    const geo = new THREE.SphereGeometry(isBig ? 1.5 : 0.6);
-    const mat = new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.8 });
-    const mesh = new THREE.Mesh(geo, mat);
-    
-    // Spawn away from player
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 30 + Math.random() * 20;
-    mesh.position.set(player.position.x + Math.cos(angle)*dist, isBig ? 1.5 : 0.6, player.position.z + Math.sin(angle)*dist);
-    
-    // UI Bar
-    const ui = document.createElement('div');
-    ui.className = 'enemy-hp';
-    ui.innerHTML = '<div class="enemy-hp-bar"></div>';
-    document.body.appendChild(ui);
-    
-    scene.add(mesh);
-    enemies.push({ 
-        mesh, 
-        hp: isBig ? 30 : 5, 
-        maxHp: isBig ? 30 : 5, 
-        ui, 
-        isBig,
-        radius: isBig ? 1.5 : 0.6 
+    const geom = new THREE.BoxGeometry(1.5, 1, 1.5);
+    const mat = new THREE.MeshStandardMaterial({
+        color: 0x884400, 
+        emissive: 0xffaa00, 
+        emissiveIntensity: 0.4
     });
+    const c = new THREE.Mesh(geom, mat);
+    let rx, rz;
+    do {
+        rx = (Math.random() - 0.5) * 85;
+        rz = (Math.random() - 0.5) * 85;
+    } while (buildings.some(b => b.box.containsPoint(new THREE.Vector3(rx, 0.5, rz))));
+    c.position.set(rx, 0.5, rz);
+    scene.add(c);
+    chests.push({ mesh: c });
 }
 
 function spawnDrop(pos) {
-    const types = ['HEALTH', 'CASH', 'AMMO', 'ARMOR'];
+    const types = ['HEALTH', 'ARMOR', 'CASH', 'RAPIDFIRE', 'DAMAGE', 'SHIELD'];
     const type = types[Math.floor(Math.random() * types.length)];
-    const color = type === 'HEALTH' ? 0xff0044 : type === 'CASH' ? 0xffff00 : 0x00ff00;
+    const colors = { 
+        HEALTH: 0xff0044, 
+        ARMOR: 0x00aaff, 
+        CASH: 0xffdd00,
+        RAPIDFIRE: 0xff00ff,
+        DAMAGE: 0xff4400,
+        SHIELD: 0x4444ff
+    };
     
-    const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.4), new THREE.MeshStandardMaterial({ color, emissive: color }));
+    const geom = new THREE.IcosahedronGeometry(0.5);
+    const mat = new THREE.MeshStandardMaterial({
+        color: colors[type], 
+        emissive: colors[type], 
+        emissiveIntensity: 1.0
+    });
+    const mesh = new THREE.Mesh(geom, mat);
     mesh.position.copy(pos);
     mesh.position.y = 0.5;
     scene.add(mesh);
     drops.push({ mesh, type });
 }
 
-// --- UI & SHOP ---
+createBuildings();
+for(let i=0; i<8; i++) spawnChest();
+
+// --- POWERUP SYSTEM ---
+function activatePowerup(type) {
+    const duration = 10000;
+    
+    if(activePowerups[type]) {
+        clearTimeout(activePowerups[type].timeout);
+        clearInterval(activePowerups[type].interval);
+        activePowerups[type].indicator.remove();
+    }
+    
+    const indicator = document.createElement('div');
+    indicator.className = 'powerup-indicator';
+    indicator.style.borderColor = type === 'RAPIDFIRE' ? '#ff00ff' : type === 'DAMAGE' ? '#ff4400' : '#4444ff';
+    indicator.textContent = type + ': 10s';
+    document.getElementById('powerup-container').appendChild(indicator);
+    
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+        const remaining = Math.ceil((duration - (Date.now() - startTime)) / 1000);
+        if(remaining > 0) indicator.textContent = type + ': ' + remaining + 's';
+    }, 100);
+    
+    const timeout = setTimeout(() => {
+        delete activePowerups[type];
+        clearInterval(interval);
+        indicator.remove();
+    }, duration);
+    
+    activePowerups[type] = { timeout, interval, indicator };
+}
+
+// --- LOGIC ---
+function addShake(amt) { shakeIntensity = Math.max(shakeIntensity, amt); }
+
 window.toggleShop = () => {
     isPaused = !isPaused;
-    document.getElementById('shop-overlay').style.display = isPaused ? 'flex' : 'none';
+    document.getElementById('wheel-overlay').style.display = isPaused ? 'flex' : 'none';
 };
 
-window.purchase = (item) => {
-    let cost = 0;
-    let success = false;
-    
-    if(item === 'PISTOL' && cash >= 200) { cash -= 200; weapons.PISTOL.level++; weapons.PISTOL.dmg *= 1.2; success = true; }
-    else if(weapons[item] && !weapons[item].owned && cash >= 2000) { 
-        // Logic handled in specific blocks below for correct pricing
+window.buyOrUpgrade = (type, cost) => {
+    if (type === 'SPEED' && cash >= 300) { cash -= 300; pSpeed += 0.03; showMissionStory("HQ: Mobility thrusters upgraded."); }
+    else if (weapons[type]) {
+        const w = weapons[type];
+        if (!w.owned && cash >= cost) { 
+            cash -= cost; w.owned = true; currentWpn = type; 
+            // Update mission objectives
+            updateMissionUI();
+        }
+        else if (w.owned && cash >= 200) { cash -= 200; w.level++; w.fireRate *= 0.82; w.dmg *= 1.4; }
     }
-    
-    // Quick lookups for this demo
-    const costs = { SHOTGUN: 500, SMG: 1200, RAILGUN: 2500, FLAMETHROWER: 1800, SPEED: 300 };
-    
-    if(item === 'SPEED' && cash >= costs.SPEED) {
-        cash -= costs.SPEED; pSpeed += 0.05; success = true;
-    } else if(weapons[item] && !weapons[item].owned && cash >= costs[item]) {
-        cash -= costs[item];
-        weapons[item].owned = true;
-        currentWpn = item;
-        success = true;
-        updateMission('BUY', 1); // Trigger mission update
-    } else if (item === 'PISTOL' && cash >= 200) {
-        // already handled logic above, just ensuring flow
-    }
-
-    if(success) updateUI();
+    updateUI();
 };
 
 function updateUI() {
-    document.getElementById('cash-ui').innerText = 'CASH: $' + cash;
-    document.getElementById('armor-ui').innerText = 'ARMOR: ' + armor;
-    document.getElementById('wpn-ui').innerText = 'WEAPON: ' + currentWpn;
-    
-    for(let i=1; i<=3; i++) {
-        const h = document.getElementById('h'+i);
-        if(i <= lives) h.classList.remove('lost'); else h.classList.add('lost');
-    }
+    document.getElementById('cash-ui').innerText = `CASH: $${cash}`;
+    document.getElementById('armor-ui').innerText = `ARMOR: ${armor}`;
+    document.getElementById('weapon-ui').innerText = `WEAPON: ${currentWpn} (LVL ${weapons[currentWpn].level})`;
+    for(let i=1; i<=3; i++) document.getElementById(`h${i}`).className = i <= lives ? 'heart' : 'heart lost';
 }
 
-// --- MAIN LOOP ---
-createBuildings();
-for(let i=0; i<6; i++) spawnChest();
-initMission(); // Start Campaign
-updateUI();
+function spawnEnemy() {
+    const isBig = Math.random() > 0.85;
+    
+    const sprite = createEnemySprite(isBig);
+    const angle = Math.random() * Math.PI * 2;
+    sprite.position.set(player.position.x + Math.cos(angle)*45, isBig ? 1.5 : 1, player.position.z + Math.sin(angle)*45);
+    const ui = document.createElement('div');
+    ui.className = 'enemy-health-wrap';
+    ui.innerHTML = '<div class="enemy-health-bar"></div>';
+    document.body.appendChild(ui);
+    scene.add(sprite);
+    enemies.push({ mesh: sprite, hp: isBig?20:6, max: isBig?20:6, ui, radius: isBig ? 2.5 : 1.2, isBig });
+}
 
-const raycaster = new THREE.Raycaster();
-const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+// --- MINIMAP ---
+function drawMinimap() {
+    const canvas = document.getElementById('minimap');
+    const ctx = canvas.getContext('2d');
+    const scale = 1.5;
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    ctx.fillRect(0, 0, 150, 150);
+    
+    // Buildings
+    ctx.fillStyle = '#334';
+    buildings.forEach(b => {
+        const x = 75 + (b.mesh.position.x - player.position.x) * scale;
+        const z = 75 + (b.mesh.position.z - player.position.z) * scale;
+        if(x > 0 && x < 150 && z > 0 && z < 150) {
+            ctx.fillRect(x-2, z-2, 4, 4);
+        }
+    });
+    
+    // Enemies
+    ctx.fillStyle = '#f0f';
+    enemies.forEach(e => {
+        const x = 75 + (e.mesh.position.x - player.position.x) * scale;
+        const z = 75 + (e.mesh.position.z - player.position.z) * scale;
+        if(x > 0 && x < 150 && z > 0 && z < 150) {
+            ctx.beginPath();
+            ctx.arc(x, z, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+    
+    // Chests
+    ctx.fillStyle = '#fa0';
+    chests.forEach(c => {
+        const x = 75 + (c.mesh.position.x - player.position.x) * scale;
+        const z = 75 + (c.mesh.position.z - player.position.z) * scale;
+        if(x > 0 && x < 150 && z > 0 && z < 150) {
+            ctx.fillRect(x-1.5, z-1.5, 3, 3);
+        }
+    });
+    
+    // Player
+    ctx.fillStyle = '#0ff';
+    ctx.beginPath();
+    ctx.arc(75, 75, 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Direction
+    ctx.strokeStyle = '#0ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(75, 75);
+    ctx.lineTo(75 + Math.sin(player.rotation.y) * 8, 75 + Math.cos(player.rotation.y) * 8);
+    ctx.stroke();
+}
 
+// --- INPUTS ---
+window.addEventListener('mousemove', (e) => {
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+});
+window.addEventListener('mousedown', (e) => { if(e.button === 0) mouseShooting = true; });
+window.addEventListener('mouseup', (e) => { if(e.button === 0) mouseShooting = false; });
+window.onkeydown = (e) => { 
+    if(e.code === 'KeyQ') toggleShop(); 
+    if(e.code === 'Space' && dashCooldown <= 0) { dashActive = 12; dashCooldown = 40; invuln = 20; }
+    keys[e.code] = true; 
+};
+window.onkeyup = (e) => keys[e.code] = false;
+
+// --- LOOP ---
 function animate() {
     requestAnimationFrame(animate);
     if(isPaused) return;
 
-    // 1. Movement
-    let spd = dashActive > 0 ? pSpeed * 3 : pSpeed;
+    // Movement
+    let speed = dashActive > 0 ? pSpeed * 2.8 : pSpeed;
+    const prevPos = player.position.clone();
     const move = new THREE.Vector3(0, 0, 0);
-    if(keys['KeyW']) move.z -= 1;
-    if(keys['KeyS']) move.z += 1;
-    if(keys['KeyA']) move.x -= 1;
-    if(keys['KeyD']) move.x += 1;
+    if(keys['KeyW'] || keys['ArrowUp']) move.z -= 1; 
+    if(keys['KeyS'] || keys['ArrowDown']) move.z += 1;
+    if(keys['KeyA'] || keys['ArrowLeft']) move.x -= 1; 
+    if(keys['KeyD'] || keys['ArrowRight']) move.x += 1;
     
-    // Joystick Override
     if(moveInput.length() > 0.1) { move.x = moveInput.x; move.z = moveInput.y; }
-    
-    if(move.length() > 0) {
-        const nextPos = player.position.clone().add(move.normalize().multiplyScalar(spd));
-        let blocked = false;
-        buildings.forEach(b => { if(b.box.containsPoint(nextPos)) blocked = true; });
-        if(!blocked) player.position.copy(nextPos);
-    }
-    
-    // 2. Aiming
-    raycaster.setFromCamera(mouse, camera);
-    const target = new THREE.Vector3();
-    raycaster.ray.intersectPlane(plane, target);
-    
-    if(aimInput.length() > 0.1) {
-        player.lookAt(player.position.x + aimInput.x, player.position.y, player.position.z + aimInput.y);
-    } else {
-        player.lookAt(target.x, player.position.y, target.z);
-    }
 
-    // 3. Shooting
-    if((mouseShooting || isFiring) && Date.now() - lastFire > weapons[currentWpn].fireRate) {
-        const w = weapons[currentWpn];
-        const num = currentWpn === 'SHOTGUN' ? 5 : 1;
-        
-        for(let k=0; k<num; k++) {
-            const spread = (Math.random()-0.5) * w.spread;
-            const dir = new THREE.Vector3(0,0,1).applyQuaternion(player.quaternion);
-            dir.applyAxisAngle(new THREE.Vector3(0,1,0), spread);
+    if(move.length() > 0.05) {
+        player.position.add(move.normalize().multiplyScalar(speed));
+        buildings.forEach(b => { if(b.box.containsPoint(player.position)) player.position.copy(prevPos); });
+        pSprite.position.y = Math.sin(Date.now() * 0.01) * 0.1;
+    }
+    
+    // Collect Chests
+    for(let i=chests.length-1; i>=0; i--) {
+        chests[i].mesh.rotation.y += 0.02;
+        if(player.position.distanceTo(chests[i].mesh.position) < 1.8) {
+            spawnDrop(chests[i].mesh.position);
+            for(let j=0; j<5; j++) createParticle(chests[i].mesh.position, 0xffaa00);
+            scene.remove(chests[i].mesh);
+            chests.splice(i, 1);
+            setTimeout(spawnChest, 7000);
             
-            const b = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({ color: w.color }));
-            b.position.copy(player.position);
-            b.position.y = 0.9;
-            scene.add(b);
-            bullets.push({ mesh: b, dir: dir, life: 60, speed: currentWpn === 'FLAMETHROWER' ? 0.6 : 1.2 });
+            // Update mission
+            chestsCollected++;
+            updateQuest('CHEST');
+            updateMissionUI();
         }
-        
-        shakeIntensity = w.shake;
-        lastFire = Date.now();
     }
 
-    // 4. Bullets Logic
-    for(let i=bullets.length-1; i>=0; i--) {
-        const b = bullets[i];
-        b.mesh.position.add(b.dir.clone().multiplyScalar(b.speed));
-        b.life--;
-        
-        let hit = false;
-        
-        // Wall Hit
-        buildings.forEach(wall => {
-            if(wall.box.containsPoint(b.mesh.position)) hit = true;
-        });
-        
-        // Enemy Hit
-        if(!hit) {
-            for(let j=enemies.length-1; j>=0; j--) {
-                const e = enemies[j];
-                if(b.mesh.position.distanceTo(e.mesh.position) < e.radius + 0.5) {
-                    hit = true;
-                    e.hp -= weapons[currentWpn].dmg;
-                    
-                    // Create particle
-                    const p = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.2,0.2), new THREE.MeshBasicMaterial({color: weapons[currentWpn].color}));
-                    p.position.copy(b.mesh.position);
-                    scene.add(p);
-                    particles.push({mesh:p, life:15, vel: new THREE.Vector3((Math.random()-0.5)*0.5, Math.random()*0.5, (Math.random()-0.5)*0.5)});
+    if(dashActive > 0) dashActive--;
+    if(dashCooldown > 0) dashCooldown--;
 
-                    if(e.hp <= 0) {
-                        // Enemy Death
-                        scene.remove(e.mesh);
-                        e.ui.remove();
-                        enemies.splice(j, 1);
-                        cash += e.isBig ? 150 : 50;
-                        updateMission('KILL', 1); // << UPDATE MISSION
-                        if(Math.random() > 0.7) spawnDrop(e.mesh.position);
-                    }
-                    break;
-                }
+    // Aim
+    raycaster.setFromCamera(mouse, camera);
+    const intersect = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(groundPlane, intersect)) {
+        if(aimInput.length() < 0.1) player.rotation.y = Math.atan2(intersect.x - player.position.x, intersect.z - player.position.z);
+    }
+    if(aimInput.length() > 0.1) player.rotation.y = Math.atan2(aimInput.x, aimInput.y);
+
+    // Shoot
+    if(mouseShooting || isFiring) {
+        const w = weapons[currentWpn];
+        let fireRate = w.fireRate;
+        if(activePowerups['RAPIDFIRE']) fireRate *= 0.5;
+        
+        if(Date.now() - lastFire > fireRate) {
+            const count = currentWpn === 'SHOTGUN' ? 6 : 1;
+            for(let i=0; i<count; i++) {
+                const size = currentWpn === 'FLAMETHROWER' ? 0.4 : currentWpn === 'LASER' ? 0.15 : 0.25;
+                const b = new THREE.Mesh(
+                    new THREE.SphereGeometry(size), 
+                    new THREE.MeshBasicMaterial({color: w.color})
+                );
+                b.position.copy(player.position).y = 0.5;
+                const spread = (Math.random()-0.5) * w.spread + (currentWpn === 'SHOTGUN' ? (i-2.5)*0.14 : 0);
+                const dir = new THREE.Vector3(Math.sin(player.rotation.y), 0, Math.cos(player.rotation.y)).applyAxisAngle(new THREE.Vector3(0,1,0), spread);
+                const speed = currentWpn === 'FLAMETHROWER' ? 0.6 : currentWpn === 'LASER' ? 1.5 : 1.0;
+                bullets.push({ mesh: b, vel: dir.multiplyScalar(speed), life: currentWpn === 'FLAMETHROWER' ? 30 : 100 });
+                scene.add(b);
             }
-        }
-        
-        if(hit || b.life <= 0) {
-            scene.remove(b.mesh);
-            bullets.splice(i, 1);
+            createMuzzleFlash(player.position.clone().add(new THREE.Vector3(0, 0.5, 0)));
+            lastFire = Date.now();
+            addShake(w.shake);
         }
     }
 
-    // 5. Enemy Logic
-    enemies.forEach(e => {
-        const dir = new THREE.Vector3().subVectors(player.position, e.mesh.position).normalize();
-        const next = e.mesh.position.clone().add(dir.multiplyScalar(e.isBig ? 0.05 : 0.08));
-        
-        let blocked = false;
-        buildings.forEach(b => { if(b.box.containsPoint(next)) blocked = true; });
-        if(!blocked) e.mesh.position.copy(next);
-        
-        // UI Position
-        const vector = e.mesh.position.clone();
-        vector.project(camera);
-        const x = (vector.x * .5 + .5) * window.innerWidth;
-        const y = (-(vector.y * .5) + .5) * window.innerHeight;
-        e.ui.style.left = x + 'px';
-        e.ui.style.top = y + 'px';
-        e.ui.firstChild.style.width = (e.hp / e.maxHp)*100 + '%';
-        
-        // Damage Player
-        if(e.mesh.position.distanceTo(player.position) < 1.5 && invuln <= 0) {
-            if(armor > 0) armor--; else lives--;
-            invuln = 60;
-            shakeIntensity = 5;
-            updateUI();
-            if(lives <= 0) location.reload();
-        }
-    });
+    // Camera
+    const basePos = new THREE.Vector3(player.position.x, 28, player.position.z + 18);
+    camera.position.lerp(basePos, 0.15);
+    if(shakeIntensity > 0.01) {
+        camera.position.x += (Math.random() - 0.5) * shakeIntensity;
+        camera.position.z += (Math.random() - 0.5) * shakeIntensity;
+        shakeIntensity *= 0.7; 
+    }
+    camera.lookAt(player.position.x, 0, player.position.z);
 
-    // 6. Chests & Drops
-    chests.forEach((c, idx) => {
-        if(player.position.distanceTo(c.position) < 2) {
-            scene.remove(c);
-            chests.splice(idx, 1);
-            spawnDrop(c.position);
-            updateMission('LOOT', 1); // << UPDATE MISSION
-            cash += 100;
-            updateUI();
-            setTimeout(spawnChest, 10000);
-        }
-    });
-    
-    for(let i=drops.length-1; i>=0; i--) {
-        const d = drops[i];
-        d.mesh.rotation.y += 0.1;
-        if(player.position.distanceTo(d.mesh.position) < 1.5) {
-            if(d.type === 'HEALTH' && lives < 3) lives++;
-            if(d.type === 'ARMOR') armor += 3;
-            if(d.type === 'CASH') cash += 200;
-            scene.remove(d.mesh);
-            drops.splice(i, 1);
-            updateUI();
+    // Muzzle flashes
+    for(let i=muzzleFlashes.length-1; i>=0; i--) {
+        muzzleFlashes[i].life--;
+        muzzleFlashes[i].sprite.material.opacity = muzzleFlashes[i].life / 3;
+        muzzleFlashes[i].sprite.scale.multiplyScalar(1.2);
+        if(muzzleFlashes[i].life <= 0) {
+            scene.remove(muzzleFlashes[i].sprite);
+            muzzleFlashes.splice(i, 1);
         }
     }
 
-    // 7. Particles
+    // Particles
     for(let i=particles.length-1; i>=0; i--) {
         const p = particles[i];
-        p.mesh.position.add(p.vel);
-        p.mesh.rotation.x += 0.1;
+        p.sprite.position.add(p.vel);
+        p.vel.y -= 0.01;
         p.life--;
-        if(p.life <= 0) { scene.remove(p.mesh); particles.splice(i, 1); }
+        p.sprite.material.opacity = p.life / 20;
+        if(p.life <= 0) {
+            scene.remove(p.sprite);
+            particles.splice(i, 1);
+        }
     }
 
-    // 8. Timers & Spawners
-    if(invuln > 0) invuln--;
-    if(dashActive > 0) dashActive--;
-    if(enemies.length < 10 + (missionIdx*2)) spawnEnemy();
+    // Bullets
+    for(let i=bullets.length-1; i>=0; i--) {
+        const b = bullets[i]; 
+        b.mesh.position.add(b.vel);
+        b.life--;
+        
+        if(currentWpn === 'FLAMETHROWER') {
+            b.mesh.material.opacity = b.life / 30;
+            b.mesh.scale.multiplyScalar(1.05);
+        }
+        
+        let removed = false;
+        buildings.forEach(wall => { 
+            if(wall.box.containsPoint(b.mesh.position)) { 
+                createParticle(b.mesh.position, weapons[currentWpn].color);
+                scene.remove(b.mesh); 
+                bullets.splice(i, 1); 
+                removed = true; 
+            } 
+        });
+        if(removed) continue;
 
-    // 9. Camera Shake & Follow
-    const idealOffset = new THREE.Vector3(0, 30, 20);
-    const idealPos = player.position.clone().add(idealOffset);
-    
-    if(shakeIntensity > 0) {
-        idealPos.x += (Math.random()-0.5)*shakeIntensity;
-        idealPos.z += (Math.random()-0.5)*shakeIntensity;
-        shakeIntensity *= 0.9;
+        for(let j=enemies.length-1; j>=0; j--) {
+            const en = enemies[j];
+            if(b.mesh.position.distanceTo(en.mesh.position) < en.radius) {
+                let dmg = weapons[currentWpn].dmg;
+                if(activePowerups['DAMAGE']) dmg *= 2.0;
+                en.hp -= dmg;
+                
+                for(let k=0; k<2; k++) createParticle(b.mesh.position, 0xff00ff);
+                scene.remove(b.mesh); bullets.splice(i, 1);
+                
+                if(en.hp <= 0) {
+                    scene.remove(en.mesh); document.body.removeChild(en.ui);
+                    enemies.splice(j, 1); 
+                    cash += en.isBig ? 400 : 100;
+                    
+                    // Update mission stats
+                    killCount++;
+                    if (en.isBig) bigEnemiesKilled++;
+                    
+                    updateQuest('KILL');
+                    updateMissionUI();
+                    
+                    for(let k=0; k<8; k++) createParticle(en.mesh.position, en.isBig ? 0xff0000 : 0xff00ff);
+                    updateUI();
+                }
+                removed = true; break;
+            }
+        }
+        if(!removed && (b.mesh.position.distanceTo(player.position) > 80 || b.life <= 0)) { 
+            scene.remove(b.mesh); bullets.splice(i, 1); 
+        }
+    }
+
+    // Drops Pickup
+    for(let i=drops.length-1; i>=0; i--) {
+        drops[i].mesh.rotation.y += 0.05;
+        drops[i].mesh.position.y = 0.5 + Math.sin(Date.now() * 0.005) * 0.2;
+        if(player.position.distanceTo(drops[i].mesh.position) < 1.5) {
+            const d = drops[i];
+            if(d.type === 'HEALTH' && lives < 3) lives++;
+            if(d.type === 'ARMOR') armor += 2;
+            if(d.type === 'CASH') cash += 250;
+            if(d.type === 'RAPIDFIRE') activatePowerup('RAPIDFIRE');
+            if(d.type === 'DAMAGE') activatePowerup('DAMAGE');
+            if(d.type === 'SHIELD') { activatePowerup('SHIELD'); invuln = 600; }
+            updateUI();
+            updateMissionUI(); // Update cash objective
+            for(let j=0; j<5; j++) createParticle(d.mesh.position, d.mesh.material.color.getHex());
+            scene.remove(d.mesh);
+            drops.splice(i, 1);
+        }
+    }
+
+    // Enemy AI
+    enemies.forEach(en => {
+        const toP = new THREE.Vector3().subVectors(player.position, en.mesh.position).normalize();
+        const moveVec = toP.multiplyScalar(en.isBig ? 0.04 : 0.09);
+        const nextPos = en.mesh.position.clone().add(moveVec);
+        
+        let blocked = false;
+        buildings.forEach(b => { if(b.box.containsPoint(nextPos)) blocked = true; });
+        if(!blocked) en.mesh.position.copy(nextPos);
+        
+        // Breathing animation
+        const breathScale = 1 + Math.sin(Date.now() * 0.003) * 0.05;
+        en.mesh.scale.set(
+            (en.isBig ? 3 : 2) * breathScale, 
+            (en.isBig ? 3 : 2) * breathScale, 
+            1
+        );
+
+        if(en.mesh.position.distanceTo(player.position) < en.radius && invuln === 0) {
+            if(armor > 0) { armor--; invuln = 30; } 
+            else { lives--; invuln = 60; }
+            addShake(5.0); updateUI();
+            if(lives <= 0) location.reload();
+        }
+        const sPos = en.mesh.position.clone().add(new THREE.Vector3(0, en.radius, 0)).project(camera);
+        en.ui.style.left = (sPos.x + 1) / 2 * window.innerWidth + 'px';
+        en.ui.style.top = -(sPos.y - 1) / 2 * window.innerHeight + 'px';
+        en.ui.firstChild.style.width = (en.hp / en.max) * 100 + '%';
+    });
+
+    if(invuln > 0) { 
+        invuln--; 
+        pSprite.visible = (invuln % 4 > 1);
+        if(activePowerups['SHIELD']) {
+            pSprite.material.color.setHex(0x4444ff);
+        }
+    } else {
+        pSprite.visible = true;
+        pSprite.material.color.setHex(0x00ffff);
     }
     
-    camera.position.lerp(idealPos, 0.1);
-    camera.lookAt(player.position);
-
-    // 10. Minimap
+    // Update survival time objective periodically
+    if (Date.now() % 3000 < 50) { // Every ~3 seconds
+        updateMissionUI();
+    }
+    
+    // Animate lights
+    lights.forEach((light, i) => {
+        light.intensity = 2 + Math.sin(Date.now() * 0.001 + i) * 0.5;
+    });
+    
     drawMinimap();
-
     composer.render();
 }
 
-function drawMinimap() {
-    const ctx = document.getElementById('minimap').getContext('2d');
-    ctx.canvas.width = 120; ctx.canvas.height = 120;
-    ctx.fillStyle = '#000'; ctx.fillRect(0,0,120,120);
-    
-    const scale = 2;
-    const cx = 60, cy = 60;
-    
-    // Player
-    ctx.fillStyle = '#0ff'; ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
-    
-    // Enemies
-    ctx.fillStyle = '#f00';
-    enemies.forEach(e => {
-        const dx = (e.mesh.position.x - player.position.x) * scale;
-        const dy = (e.mesh.position.z - player.position.z) * scale;
-        if(Math.abs(dx) < 60 && Math.abs(dy) < 60) {
-            ctx.beginPath(); ctx.arc(cx+dx, cy+dy, 2, 0, Math.PI*2); ctx.fill();
-        }
-    });
-
-    // Chests
-    ctx.fillStyle = '#fa0';
-    chests.forEach(c => {
-        const dx = (c.position.x - player.position.x) * scale;
-        const dy = (c.position.z - player.position.z) * scale;
-        if(Math.abs(dx) < 60 && Math.abs(dy) < 60) ctx.fillRect(cx+dx-2, cy+dy-2, 4, 4);
-    });
-}
-
-// --- INPUTS ---
-const keys = {};
-const mouse = new THREE.Vector2();
-let mouseShooting = false;
-
-window.addEventListener('keydown', e => { 
-    keys[e.code] = true; 
-    if(e.code === 'KeyQ') toggleShop();
-    if(e.code === 'Space' && dashCooldown <= 0) { dashActive = 10; dashCooldown = 30; }
-});
-window.addEventListener('keyup', e => keys[e.code] = false);
-window.addEventListener('mousemove', e => {
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-});
-window.addEventListener('mousedown', () => mouseShooting = true);
-window.addEventListener('mouseup', () => mouseShooting = false);
-
-// Touch Logic
-function setupStick(id, isMove) {
-    const el = document.getElementById(id);
-    const knob = el.querySelector('.knob');
+// Mobile Setup
+function setupJoystick(id, knobId, isAim = false) {
+    const container = document.getElementById(id);
+    const knob = document.getElementById(knobId);
     let touchId = null;
-    let startX, startY;
-    
-    el.addEventListener('touchstart', e => {
-        e.preventDefault();
-        const t = e.changedTouches[0];
-        touchId = t.identifier;
-        startX = t.clientX; startY = t.clientY;
-        if(!isMove) isFiring = true;
+    const handleTouch = (touch) => {
+        const rect = container.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        let dx = touch.clientX - centerX;
+        let dy = touch.clientY - centerY;
+        const dist = Math.min(50, Math.sqrt(dx*dx + dy*dy));
+        const angle = Math.atan2(dy, dx);
+        knob.style.transform = `translate(calc(-50% + ${Math.cos(angle)*dist}px), calc(-50% + ${Math.sin(angle)*dist}px))`;
+        if(isAim) aimInput.set(Math.cos(angle), Math.sin(angle));
+        else moveInput.set(Math.cos(angle) * (dist/50), Math.sin(angle) * (dist/50));
+    };
+    container.addEventListener('touchstart', (e) => {
+        const touch = e.changedTouches[0];
+        touchId = touch.identifier;
+        if(isAim) isFiring = true;
+        handleTouch(touch);
     });
-    
-    window.addEventListener('touchmove', e => {
-        for(let i=0; i<e.changedTouches.length; i++) {
-            const t = e.changedTouches[i];
-            if(t.identifier === touchId) {
-                let dx = t.clientX - startX;
-                let dy = t.clientY - startY;
-                const len = Math.sqrt(dx*dx + dy*dy);
-                if(len > 40) { dx *= 40/len; dy *= 40/len; }
-                
-                knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-                
-                if(isMove) { moveInput.set(dx/40, dy/40); }
-                else { aimInput.set(dx/40, dy/40); }
-            }
+    window.addEventListener('touchmove', (e) => {
+        for (let i=0; i<e.changedTouches.length; i++) {
+            if(e.changedTouches[i].identifier === touchId) handleTouch(e.changedTouches[i]);
         }
     });
-    
-    const end = (e) => {
-        for(let i=0; i<e.changedTouches.length; i++) {
+    const onEnd = (e) => {
+        for (let i=0; i<e.changedTouches.length; i++) {
             if(e.changedTouches[i].identifier === touchId) {
                 touchId = null;
                 knob.style.transform = `translate(-50%, -50%)`;
-                if(isMove) moveInput.set(0,0);
-                else { aimInput.set(0,0); isFiring = false; }
+                if(isAim) { aimInput.set(0,0); isFiring = false; }
+                else moveInput.set(0,0);
             }
         }
     };
-    window.addEventListener('touchend', end);
+    window.addEventListener('touchend', onEnd);
+    window.addEventListener('touchcancel', onEnd);
 }
 
-setupStick('stick-l', true);
-setupStick('stick-r', false);
+setupJoystick('move-stick', 'move-knob', false);
+setupJoystick('aim-stick', 'aim-knob', true);
 document.getElementById('dash-btn').addEventListener('touchstart', (e) => {
     e.preventDefault();
-    dashActive = 10;
+    if(dashCooldown <= 0) { dashActive = 12; dashCooldown = 40; invuln = 20; }
 });
 
+setInterval(() => { if(!isPaused && enemies.length < 18) spawnEnemy(); }, 1400);
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight; 
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// START
+startMission(0);
+updateUI();
 animate();
 </script>
 </body>
