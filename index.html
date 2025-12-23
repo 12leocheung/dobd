@@ -104,6 +104,23 @@
             margin-top: 8px;
             text-align: center;
         }
+        
+        /* --- ESC CONTINUE MESSAGE --- */
+        .esc-continue {
+            color: #8af;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+            animation: pulse 2s infinite;
+            border-top: 1px solid rgba(136, 170, 255, 0.3);
+            padding-top: 8px;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
 
         /* --- QUESTS SIDEBAR --- */
         #quest-sidebar {
@@ -251,6 +268,7 @@
                 </li>
             </ul>
             <div class="mission-reward" id="mission-reward">REWARD: $1000 + SHOTGUN ACCESS</div>
+            <div class="esc-continue" id="esc-continue">Press 'ESC' to continue</div>
         </div>
     </div>
 
@@ -382,6 +400,8 @@ let missionStartTime = Date.now();
 let chestsCollected = 0;
 let bigEnemiesKilled = 0;
 let quests = [];
+let storyPanelVisible = false;
+let autoHideTimeout = null;
 
 // Initialize first mission
 function startMission(missionIndex) {
@@ -397,7 +417,7 @@ function startMission(missionIndex) {
     // Update UI
     updateMissionUI();
     
-    // Show story
+    // Show story with ESC option
     showMissionStory(mission.story);
     
     // Add to quests
@@ -407,14 +427,6 @@ function startMission(missionIndex) {
 function updateMissionUI() {
     const mission = missions[currentMission];
     const panel = document.getElementById('story-panel');
-    
-    // Show panel for 10 seconds after mission start
-    panel.style.opacity = '1';
-    setTimeout(() => {
-        if (currentMission === missions.indexOf(mission)) {
-            panel.style.opacity = '0.7';
-        }
-    }, 10000);
     
     // Update mission info
     document.getElementById('mission-name').textContent = `MISSION ${mission.id}: ${mission.name}`;
@@ -451,7 +463,8 @@ function updateMissionUI() {
                 objectiveText = `Eliminate ${obj.target} enemies (${obj.current}/${obj.target})`;
                 break;
             case 'BIG_KILL':
-                objectiveText = `Destroy ${obj.target} heavy constructs (${obj.current}/${obj.target})`;
+                objectiveText = `Destroy ${obj.target} heavy constructs (${bigEnemiesKilled}/${obj.target})`;
+                obj.current = bigEnemiesKilled;
                 break;
             case 'CHEST':
                 objectiveText = `Collect ${obj.target} supply crates (${chestsCollected}/${obj.target})`;
@@ -491,6 +504,62 @@ function updateMissionUI() {
     // Check if mission is complete
     if (totalProgress >= maxProgress) {
         completeMission();
+    }
+}
+
+function showMissionStory(text) {
+    const panel = document.getElementById('story-panel');
+    const desc = document.getElementById('mission-desc');
+    
+    // Show ESC message
+    document.getElementById('esc-continue').style.display = 'block';
+    
+    // Set story text
+    desc.textContent = text;
+    
+    // Show panel
+    panel.style.opacity = '1';
+    storyPanelVisible = true;
+    
+    // Set auto-hide timeout (15 seconds if ESC not pressed)
+    if (autoHideTimeout) clearTimeout(autoHideTimeout);
+    autoHideTimeout = setTimeout(() => {
+        if (storyPanelVisible) {
+            hideStoryPanel();
+        }
+    }, 15000);
+}
+
+function hideStoryPanel() {
+    const panel = document.getElementById('story-panel');
+    panel.style.opacity = '0.7'; // Keep semi-visible for objectives
+    storyPanelVisible = false;
+    
+    // Hide ESC message
+    document.getElementById('esc-continue').style.display = 'none';
+    
+    if (autoHideTimeout) {
+        clearTimeout(autoHideTimeout);
+        autoHideTimeout = null;
+    }
+}
+
+function toggleStoryPanel() {
+    if (storyPanelVisible) {
+        hideStoryPanel();
+    } else {
+        const panel = document.getElementById('story-panel');
+        panel.style.opacity = '1';
+        storyPanelVisible = true;
+        document.getElementById('esc-continue').style.display = 'block';
+        
+        // Auto-hide after 10 seconds when manually opened
+        if (autoHideTimeout) clearTimeout(autoHideTimeout);
+        autoHideTimeout = setTimeout(() => {
+            if (storyPanelVisible) {
+                hideStoryPanel();
+            }
+        }, 10000);
     }
 }
 
@@ -551,20 +620,6 @@ function updateQuest(type, amount = 1) {
         }
     });
     updateQuestProgress();
-}
-
-function showMissionStory(text) {
-    const panel = document.getElementById('story-panel');
-    panel.style.opacity = '1';
-    
-    const desc = document.getElementById('mission-desc');
-    desc.textContent = text;
-    
-    setTimeout(() => {
-        if (panel.style.opacity === '1') {
-            panel.style.opacity = '0.7';
-        }
-    }, 8000);
 }
 
 function completeMission() {
@@ -957,11 +1012,23 @@ window.addEventListener('mousemove', (e) => {
 });
 window.addEventListener('mousedown', (e) => { if(e.button === 0) mouseShooting = true; });
 window.addEventListener('mouseup', (e) => { if(e.button === 0) mouseShooting = false; });
+
+// Handle ESC key for dismissing story panel
 window.onkeydown = (e) => { 
     if(e.code === 'KeyQ') toggleShop(); 
     if(e.code === 'Space' && dashCooldown <= 0) { dashActive = 12; dashCooldown = 40; invuln = 20; }
+    if(e.code === 'Escape') {
+        if (storyPanelVisible) {
+            hideStoryPanel();
+            e.preventDefault(); // Prevent browser from exiting fullscreen or other ESC actions
+        } else if (!isPaused) {
+            // Optionally, you could make ESC also show the panel when it's hidden
+            // toggleStoryPanel();
+        }
+    }
     keys[e.code] = true; 
 };
+
 window.onkeyup = (e) => keys[e.code] = false;
 
 // --- LOOP ---
