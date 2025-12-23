@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Strike: Urban Impact</title>
+    <title>Neon Strike: Urban Impact - Story Mode</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Orbitron', sans-serif; user-select: none; touch-action: none; cursor: crosshair; }
         #ui { position: absolute; top: 10px; left: 10px; color: #fff; pointer-events: none; z-index: 10; width: calc(100% - 20px); }
@@ -17,6 +17,41 @@
         #powerup-container { position: fixed; bottom: 220px; left: 20px; z-index: 20; display: flex; flex-direction: column; gap: 8px; }
         .powerup-indicator { color: #fff; font-size: 14px; background: rgba(0, 0, 0, 0.8); padding: 8px 12px; border: 2px solid; border-radius: 6px; }
         
+        /* --- STORY HUD STYLES --- */
+        #story-panel {
+            position: absolute;
+            top: 180px; /* Below minimap */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 500px;
+            pointer-events: none;
+            z-index: 12;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .transmission-box {
+            background: rgba(0, 20, 0, 0.85);
+            border: 1px solid #0f0;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+            color: #0f0;
+            text-shadow: 0 0 5px #0f0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .transmission-title {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: #fff;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 3px;
+            display: inline-block;
+        }
+
         .mobile-ctrl { display: none; }
         @media (pointer: coarse) { .mobile-ctrl { display: block; } }
 
@@ -43,6 +78,13 @@
         <div id="hearts-container">
             <div class="heart" id="h1"></div><div class="heart" id="h2"></div><div class="heart" id="h3"></div>
             <div id="armor-ui">ARMOR: 0</div>
+        </div>
+    </div>
+
+    <div id="story-panel">
+        <div class="transmission-box">
+            <div class="transmission-title">INCOMING TRANSMISSION // HQ</div>
+            <div id="story-text"></div>
         </div>
     </div>
 
@@ -83,6 +125,12 @@ let cash = 500, isPaused = false, isFiring = false;
 let lives = 3, armor = 0, invuln = 0, lastFire = 0, pSpeed = 0.18, currentWpn = 'PISTOL';
 let shakeIntensity = 0;
 let dashCooldown = 0, dashActive = 0;
+// STORY STATE
+let killCount = 0;
+let storyIndex = 0;
+let activeStoryTimeout = null;
+let seenBigEnemy = false;
+
 const bullets = [], enemies = [], buildings = [], chests = [], drops = [], keys = {};
 const moveInput = new THREE.Vector2(), aimInput = new THREE.Vector2();
 const activePowerups = {};
@@ -102,6 +150,51 @@ const weapons = {
     FLAMETHROWER: { level: 0, owned: false, fireRate: 50, dmg: 0.3, color: 0xff4400, shake: 0.1, spread: 0.3 },
     LASER: { level: 0, owned: false, fireRate: 80, dmg: 2.0, color: 0x00ff00, shake: 0.3, spread: 0 }
 };
+
+// --- STORY DATA ---
+const storyLines = [
+    { k: 0, text: "OPERATIVE 7: Sector 09 has gone dark. The AI constructs have revolted. Containment is your priority." },
+    { k: 5, text: "HQ: Good start. They're dropping resources from the old supply grid. Scavenge those crates." },
+    { k: 15, text: "HQ: Energy spikes detected. The constructs are evolving. Stay mobile." },
+    { k: 30, text: "HQ: We're reading data corruption in the building infrastructure. This infection is deep." },
+    { k: 50, text: "HQ: Warning. Heavy signals approaching. They know you're here." },
+    { k: 80, text: "HQ: You're doing the work of a whole battalion, Operative. Keep pushing." },
+    { k: 120, text: "HQ: The core is destabilizing! Clear the area before total collapse!" },
+    { k: 200, text: "HQ: You are a legend, Operative. Infinite suppression mode engaged." }
+];
+
+function checkStory() {
+    // Check linear progression
+    if (storyIndex < storyLines.length && killCount >= storyLines[storyIndex].k) {
+        showTransmission(storyLines[storyIndex].text);
+        storyIndex++;
+    }
+}
+
+function showTransmission(text, force = false) {
+    const panel = document.getElementById('story-panel');
+    const textBox = document.getElementById('story-text');
+    
+    // Clear existing
+    if (activeStoryTimeout) clearTimeout(activeStoryTimeout);
+    
+    panel.style.opacity = '1';
+    textBox.innerText = '';
+    
+    // Typewriter effect
+    let i = 0;
+    const typeInterval = setInterval(() => {
+        textBox.innerText += text.charAt(i);
+        i++;
+        if (i >= text.length) {
+            clearInterval(typeInterval);
+            // Hide after delay
+            activeStoryTimeout = setTimeout(() => {
+                panel.style.opacity = '0';
+            }, 6000);
+        }
+    }, 30);
+}
 
 // --- THREE SETUP ---
 const scene = new THREE.Scene();
@@ -321,10 +414,16 @@ window.toggleShop = () => {
 };
 
 window.buyOrUpgrade = (type, cost) => {
-    if (type === 'SPEED' && cash >= 300) { cash -= 300; pSpeed += 0.03; }
+    if (type === 'SPEED' && cash >= 300) { cash -= 300; pSpeed += 0.03; showTransmission("HQ: Mobility thrusters upgraded."); }
     else if (weapons[type]) {
         const w = weapons[type];
-        if (!w.owned && cash >= cost) { cash -= cost; w.owned = true; currentWpn = type; }
+        if (!w.owned && cash >= cost) { 
+            cash -= cost; w.owned = true; currentWpn = type; 
+            // Weapon story triggers
+            if(type === 'RAILGUN') showTransmission("HQ: Railgun authorized. Punch through their armor.");
+            if(type === 'FLAMETHROWER') showTransmission("HQ: Purge the corruption with fire.");
+            if(type === 'LASER') showTransmission("HQ: High-energy laser equipped. Melt them.");
+        }
         else if (w.owned && cash >= 200) { cash -= 200; w.level++; w.fireRate *= 0.82; w.dmg *= 1.4; }
     }
     updateUI();
@@ -339,6 +438,13 @@ function updateUI() {
 
 function spawnEnemy() {
     const isBig = Math.random() > 0.85;
+    
+    // Story Trigger for first Big Enemy
+    if (isBig && !seenBigEnemy) {
+        seenBigEnemy = true;
+        showTransmission("HQ: ALERT. Heavy construct detected. Maintain distance!");
+    }
+
     const sprite = createEnemySprite(isBig);
     const angle = Math.random() * Math.PI * 2;
     sprite.position.set(player.position.x + Math.cos(angle)*45, isBig ? 1.5 : 1, player.position.z + Math.sin(angle)*45);
@@ -561,7 +667,11 @@ function animate() {
                 if(en.hp <= 0) {
                     scene.remove(en.mesh); document.body.removeChild(en.ui);
                     enemies.splice(j, 1); 
-                    cash += en.isBig ? 400 : 100; 
+                    cash += en.isBig ? 400 : 100;
+                    // STORY KILL INCREMENT
+                    killCount++;
+                    checkStory();
+                    
                     for(let k=0; k<8; k++) createParticle(en.mesh.position, en.isBig ? 0xff0000 : 0xff00ff);
                     updateUI();
                 }
@@ -699,6 +809,8 @@ window.addEventListener('resize', () => {
     composer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// START
+checkStory(); // Start Intro
 updateUI();
 animate();
 </script>
